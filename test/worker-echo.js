@@ -1,7 +1,7 @@
 'use strict';
 
-var register = require('../register');
-
-register(function (msg) {
+var PromiseWorker = require('..');
+var promiseWorker = new PromiseWorker();
+promiseWorker.register(function (msg) {
   return msg;
 });

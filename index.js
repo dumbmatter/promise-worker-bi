@@ -1,9 +1,14 @@
 'use strict';
 
-/* istanbul ignore next */
-var MyPromise = typeof Promise !== 'undefined' ? Promise : require('lie');
-
 var messageIds = 0;
+
+var MSGTYPE_QUERY = 0;
+var MSGTYPE_RESPONSE = 1;
+
+// Inlined from https://github.com/then/is-promise
+function isPromise(obj) {
+  return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
+}
 
 function parseJsonSafely(str) {
   try {
@@ -13,66 +18,114 @@ function parseJsonSafely(str) {
   }
 }
 
-function onMessage(self, e) {
-  var message = parseJsonSafely(e.data);
-  if (!message) {
-    // Ignore - this message is not for us.
-    return;
+function tryCatchFunc(callback, message) {
+  try {
+    return {res: callback(message)};
+  } catch (e) {
+    return {err: e};
   }
-  var messageId = message[0];
-  var error = message[1];
-  var result = message[2];
-
-  var callback = self._callbacks[messageId];
-
-  if (!callback) {
-    // Ignore - user might have created multiple PromiseWorkers.
-    // This message is not for us.
-    return;
-  }
-
-  delete self._callbacks[messageId];
-  callback(error, result);
 }
 
 function PromiseWorker(worker) {
-  var self = this;
-  self._worker = worker;
-  self._callbacks = {};
+  if (worker === undefined) {
+    self.addEventListener('message', this._onMessage.bind(this));
+  } else {
+    this._worker = worker;
+    worker.addEventListener('message', this._onMessage.bind(this));
+  }
 
-  worker.addEventListener('message', function (e) {
-    onMessage(self, e);
-  });
+  this._callbacks = {};
 }
 
+PromiseWorker.prototype.register = function (cb) {
+  this._queryCallback = cb;
+};
+
+PromiseWorker.prototype._postMessageBi = function (obj) {
+  if (this._worker) {
+    this._worker.postMessage(JSON.stringify(obj));
+  } else {
+    self.postMessage(JSON.stringify(obj));
+  }
+};
+
 PromiseWorker.prototype.postMessage = function (userMessage) {
-  var self = this;
-  var messageId = messageIds++;
+  return new Promise(function (resolve, reject) {
+    var messageId = messageIds++;
 
-  var messageToSend = [messageId, userMessage];
+    var messageToSend = [MSGTYPE_QUERY, messageId, userMessage];
 
-  return new MyPromise(function (resolve, reject) {
-    self._callbacks[messageId] = function (error, result) {
+    this._callbacks[messageId] = function (error, result) {
       if (error) {
         return reject(new Error(error.message));
       }
       resolve(result);
     };
-    var jsonMessage = JSON.stringify(messageToSend);
-    /* istanbul ignore if */
-    if (typeof self._worker.controller !== 'undefined') {
-      // service worker, use MessageChannels because e.source is broken in Chrome < 51:
-      // https://bugs.chromium.org/p/chromium/issues/detail?id=543198
-      var channel = new MessageChannel();
-      channel.port1.onmessage = function (e) {
-        onMessage(self, e);
-      };
-      self._worker.controller.postMessage(jsonMessage, [channel.port2]);
-    } else {
-      // web worker
-      self._worker.postMessage(jsonMessage);
+    this._postMessageBi(messageToSend);
+  }.bind(this));
+};
+
+PromiseWorker.prototype._postResponse = function (messageId, error, result) {
+  if (error) {
+    /* istanbul ignore else */
+    /*if (typeof console !== 'undefined' && 'error' in console) {
+      // This is to make errors easier to debug. I think it's important
+      // enough to just leave here without giving the user an option
+      // to silence it.
+      console.error('Worker caught an error:', error);
+    }*/
+    this._postMessageBi([MSGTYPE_RESPONSE, messageId, {
+      message: error.message
+    }]);
+  } else {
+    this._postMessageBi([MSGTYPE_RESPONSE, messageId, null, result]);
+  }
+};
+
+PromiseWorker.prototype._handleQuery = function (messageId, query) {
+  var result = tryCatchFunc(this._queryCallback, query);
+
+  if (result.err) {
+    this._postResponse(messageId, result.err);
+  } else if (!isPromise(result.res)) {
+    this._postResponse(messageId, null, result.res);
+  } else {
+    result.res.then(function (finalResult) {
+      this._postResponse(messageId, null, finalResult);
+    }.bind(this), function (finalError) {
+      this._postResponse(messageId, finalError);
+    }.bind(this));
+  }
+};
+
+PromiseWorker.prototype._onMessage = function (e) {
+  var message = parseJsonSafely(e.data);
+  if (!message) {
+    // Ignore - this message is not for us.
+    return;
+  }
+  var type = message[0];
+  var messageId = message[1];
+
+  if (type === MSGTYPE_QUERY) {
+    var query = message[2];
+
+    this._handleQuery(messageId, query);
+  } else if (type === MSGTYPE_RESPONSE) {
+    var error = message[2];
+    var result = message[3];
+
+    var callback = this._callbacks[messageId];
+
+    if (!callback) {
+      // Ignore - user might have created multiple PromiseWorkers.
+      // This message is not for us.
+      return;
     }
-  });
+
+    delete this._callbacks[messageId];
+    callback(error, result);
+  }
 };
 
 module.exports = PromiseWorker;

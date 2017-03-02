@@ -1,36 +1,41 @@
-promise-worker [![Build Status](https://travis-ci.org/nolanlawson/promise-worker.svg?branch=master)](https://travis-ci.org/nolanlawson/promise-worker) [![Coverage Status](https://coveralls.io/repos/github/nolanlawson/promise-worker/badge.svg?branch=master)](https://coveralls.io/github/nolanlawson/promise-worker?branch=master)
+promise-worker-bi [![Build Status](https://travis-ci.org/dumbmatter/promise-worker-bi.svg?branch=master)](https://travis-ci.org/dumbmatter/promise-worker-bi)
 ====
 
-A small and performant library for communicating with Web Workers or Service Workers, using Promises. Post a message to the worker, get a message back.
+[![Sauce Test Status](https://saucelabs.com/browser-matrix/promise-worker-bi.svg)](https://saucelabs.com/u/promise-worker-bi)
+
+A small and performant library for communicating with Web Workers, using Promises. Post a message to the worker, get a promise that resolves to the response. Post a message to the browser within the worker, get a promise that resolves to the response.
+
+This is based on [promise-worker](https://github.com/nolanlawson/promise-worker) which only allows you to send messages from the browser to the worker, not in reverse. This library allows both, using the exact same API.
 
 **Goals:**
 
- * Tiny footprint (~2.5kB min+gz)
+ * Tiny footprint (~2 kB min+gz)
  * Assumes you have a separate `worker.js` file (easier to debug, better browser support)
  * `JSON.stringify`s messages [for performance](http://nolanlawson.com/2016/02/29/high-performance-web-worker-messages/)
-
-**Live examples:**
-
-* [Web Workers](https://bl.ocks.org/nolanlawson/05e74a8408a099635c9a38f839b5ae9f)
-* [Service Workers](https://bl.ocks.org/nolanlawson/91a7f5809f2e17a2e6a753a3cb8d2eec)
 
 Usage
 ---
 
 Install:
 
-    npm install promise-worker
+    npm install promise-worker-bi
 
 Inside your main bundle:
 
 ```js
 // main.js
-var PromiseWorker = require('promise-worker');
+var PromiseWorker = require('promise-worker-bi');
+
 var worker = new Worker('worker.js');
 var promiseWorker = new PromiseWorker(worker);
 
+// Only needed if you send messages from the worker to the host
+promiseWorker.register(function (message) {
+  return 'pong2';
+});
+
 promiseWorker.postMessage('ping').then(function (response) {
-  // handle response
+  // handle response 'pong'
 }).catch(function (error) {
   // handle error
 });
@@ -40,34 +45,41 @@ Inside your `worker.js` bundle:
 
 ```js
 // worker.js
-var registerPromiseWorker = require('promise-worker/register');
+var PromiseWorker = require('promise-worker-bi');
 
-registerPromiseWorker(function (message) {
+var promiseWorker = new PromiseWorker();
+
+// Only needed if you send messages from the host to the worker
+promiseWorker.register(function (message) {
   return 'pong';
+});
+
+promiseWorker.postMessage('ping2').then(function (response) {
+  // handle response 'pong2'
+}).catch(function (error) {
+  // handle error
 });
 ```
 
-Note that you `require()` two separate APIs, so the library is split
-between the `worker.js` and main file. This keeps the total bundle size smaller.
+**Notice that except for initialization of the `promiseWorker` object, the API
+is identical in the browser and in the worker. Either one can initiate a
+message.** In all of the subsequent examples, `promiseWorker` initialization is
+omitted, so you can put the two blocks of code respectively in the worker and
+browser, or in the browser and worker.
 
-If you prefer `script` tags, you can get `PromiseWorker` via:
-
-```html
-<script src="https://unpkg.com/promise-worker/dist/promise-worker.js"></script>
-```
-
-And inside the worker, you can get `registerPromiseWorker` via:
+And it's even better with async/await:
 
 ```js
-importScripts('https://unpkg.com/promise-worker/dist/promise-worker.register.js');
+const response = await promiseWorker.postMessage('ping2');
+// response contains 'pong2'
 ```
 
 ### Message format
 
-The message you send can be any object, array, string, number, etc.:
+The message you send can be any object, array, string, number, etc. - anything
+that is serializable in JSON:
 
 ```js
-// main.js
 promiseWorker.postMessage({
   hello: 'world',
   answer: 42,
@@ -76,8 +88,7 @@ promiseWorker.postMessage({
 ```
 
 ```js
-// worker.js
-registerPromiseWorker(function (message) {
+promiseWorker.register(function (message) {
   console.log(message); // { hello: 'world', answer: 42, 'this is fun': true }
 });
 ```
@@ -87,11 +98,10 @@ can't send functions, `Date`s, custom classes, etc.
 
 ### Promises
 
-Inside of the worker, the registered handler can return either a Promise or a normal value:
+The registered handler can return either a Promise or a normal value:
 
 ```js
-// worker.js
-registerPromiseWorker(function () {
+promiseWorker.register(function () {
   return Promise.resolve().then(function () {
     return 'much async, very promise';
   });
@@ -99,7 +109,6 @@ registerPromiseWorker(function () {
 ```
 
 ```js
-// main.js
 promiseWorker.postMessage(null).then(function (message) {
   console.log(message): // 'much async, very promise'
 });
@@ -114,14 +123,12 @@ Any thrown errors or asynchronous rejections from the worker will
 be propagated to the main thread as a rejected Promise. For instance:
 
 ```js
-// worker.js
-registerPromiseWorker(function (message) {
+promiseWorker.register(function (message) {
   throw new Error('naughty!');
 });
 ```
 
 ```js
-// main.js
 promiseWorker.postMessage('whoops').catch(function (err) {
   console.log(err.message); // 'naughty!'
 });
@@ -137,7 +144,6 @@ If you need to send messages of multiple types to the worker, just add
 some type information to the message you send:
 
 ```js
-// main.js
 promiseWorker.postMessage({
   type: 'en'
 }).then(/* ... */);
@@ -148,8 +154,7 @@ promiseWorker.postMessage({
 ```
 
 ```js
-// worker.js
-registerPromiseWorker(function (message) {
+promiseWorker.register(function (message) {
   if (message.type === 'en') {
     return 'Hello!';
   } else if (message.type === 'fr') {
@@ -158,51 +163,10 @@ registerPromiseWorker(function (message) {
 });
 ```
 
-### Service Workers
-
-Communicating with a Service Worker is the same as with a Web Worker.
-However, you have to wait for the Service Worker to install and start controlling the page. Here's an example:
-
-```js
-navigator.serviceWorker.register('sw.js', {
-  scope: './'
-}).then(function () {
-  if (navigator.serviceWorker.controller) {
-    // already active and controlling this page
-    return navigator.serviceWorker;
-  }
-  // wait for a new service worker to control this page
-  return new Promise(function (resolve) {
-    function onControllerChange() {
-      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
-      resolve(navigator.serviceWorker);
-    }
-    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
-  });
-}).then(function (worker) { // the worker is ready
-  var promiseWorker = new PromiseWorker(worker);
-  return promiseWorker.postMessage('hello worker!');
-}).catch(console.log.bind(console));
-```
-
-Then inside your Service Worker:
-
-```js
-var registerPromiseWorker = require('../register');
-
-registerPromiseWorker(function (msg) {
-  return 'hello main thread!';
-});
-
-self.addEventListener('activate', function(event) {
-  event.waitUntil(self.clients.claim()); // activate right now
-});
-```
-
 Browser support
 ----
 
-See [.zuul.yml](https://github.com/nolanlawson/promise-worker/blob/master/.zuul.yml) for the full list
+See [.zuul.yml](https://github.com/dumbmatter/promise-worker-bi/blob/master/.zuul.yml) for the full list
 of tested browsers, but basically:
 
 * Chrome
@@ -216,8 +180,6 @@ of tested browsers, but basically:
 If a browser [doesn't support Web Workers](http://caniuse.com/webworker) but you still want to use this library,
 then you can use [pseudo-worker](https://github.com/nolanlawson/pseudo-worker).
 
-For Service Worker support, Chrome 40 and 41 are known to be buggy (see [#9](https://github.com/nolanlawson/promise-worker/pull/9)), but 42+ are supported.
-
 This library is not designed to run in Node.js.
 
 API
@@ -227,28 +189,35 @@ API
 
 #### `new PromiseWorker(worker)`
 
-Create a new `PromiseWorker`, using the given worker.
+Create a new instance of `PromiseWorker`, using the given worker.
 
 * `worker` - the `Worker` or [PseudoWorker](https://github.com/nolanlawson/pseudo-worker) to use.
 
-#### `PromiseWorker.postMessage(message)`
-
-Send a message to the worker and return a Promise.
-
-* `message` - object - required
-  * The message to send.
-* returns a Promise
-
 ### Worker bundle
 
-Register a message handler inside of the worker. Your handler consumes a message
-and returns a Promise or value.
+#### `new PromiseWorker()`
 
-#### `registerPromiseWorker(function)`
+Create a new instance of `PromiseWorker`.
+
+* `worker` - the `Worker` or [PseudoWorker](https://github.com/nolanlawson/pseudo-worker) to use.
+
+### Both bundles
+
+#### `PromiseWorker.register(function)`
+
+Register a message handler wherever you will be receiving messages: in the worker, in the
+browser, or both. Your handler consumes a message and returns a Promise or value.
 
 * `function`
   * Takes a message, returns a Promise or a value.
 
+#### `PromiseWorker.postMessage(message)`
+
+Send a message to the browser or worker and return a Promise.
+
+* `message` - object - required
+  * The message to send.
+* returns a Promise containing the response.
 
 Testing the library
 ---
@@ -268,10 +237,6 @@ Or to test manually in your browser of choice:
 Or to test in a browser using SauceLabs:
 
     npm run test-browser
-
-Or to test in PhantomJS:
-
-    npm run test-phantom
 
 Or to test with coverage reports:
 

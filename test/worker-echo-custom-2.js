@@ -7,7 +7,7 @@ promiseWorker.register(function (msg) {
 });
 
 self.addEventListener('message', function (e) {
-  if (typeof e.data !== 'string') { // custom message
+  if (e.data === '[2]') { // custom message
     self.postMessage(e.data);
   }
 });

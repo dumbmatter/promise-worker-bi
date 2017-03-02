@@ -9,9 +9,8 @@ var path = 'bundle-';
 
 var assert = require('assert');
 var PromiseWorker = require('../');
-var Promise = require('lie');
 
-describe('main test suite', function () {
+describe('host -> worker', function () {
 
   this.timeout(60000);
 
@@ -167,56 +166,124 @@ describe('main test suite', function () {
     ]);
   });
 
-  after(function () {
-    // check coverage inside the worker
-    if (typeof __coverage__ !== 'undefined' && !process.browser) {
-      require('mkdirp').sync('coverage');
-      require('fs').writeFileSync(
-        'coverage/coverage-worker.json', JSON.stringify(__coverage__), 'utf-8');
-    }
+  it('allows custom additional behavior 2', function () {
+    var worker = new Worker(path + 'worker-echo-custom-2.js');
+    var promiseWorker = new PromiseWorker(worker);
+    return Promise.all([
+      promiseWorker.postMessage('ping'),
+      new Promise(function (resolve, reject) {
+        function cleanup() {
+          worker.removeEventListener('message', onMessage);
+          worker.removeEventListener('error', onError);
+        }
+        function onMessage(e) {
+          if (e.data !== '[2]') {
+            return;
+          }
+          cleanup();
+          resolve(e.data);
+        }
+        function onError(e) {
+          cleanup();
+          reject(e);
+        }
+        worker.addEventListener('error', onError);
+        worker.addEventListener('message', onMessage);
+        worker.postMessage('[2]');
+      }).then(function (data) {
+        assert.equal(data, '[2]');
+      })
+    ]);
   });
 
 });
 
-describe('service worker test suite', function () {
+describe('worker -> host', function () {
+
   this.timeout(60000);
 
-  if (typeof navigator == 'undefined' || !('serviceWorker' in navigator)) {
-    return;
-  }
-
-  var worker;
-
-  before(function () {
-    return navigator.serviceWorker.register(path + 'worker-echo-sw.js', {
-      scope: './'
-    }).then(function () {
-      if (navigator.serviceWorker.controller) {
-        // already active and controlling this page
-        return navigator.serviceWorker;
-      }
-      // wait for a new service worker to control this page
-      return new Promise(function (resolve) {
-        function onControllerChange() {
-          navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
-          resolve(navigator.serviceWorker);
-        }
-        navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
-      });
-    }).then(function (theWorker) {
-      worker = theWorker;
-    });
-  });
-
-  it('echoes a message', function () {
+  it('sends a message from worker to host', function (done) {
+    var worker = new Worker(path + 'worker-host-ping.js');
     var promiseWorker = new PromiseWorker(worker);
 
-    return promiseWorker.postMessage('ping').then(function (res) {
-      assert.equal(res, 'ping');
+    var i = 0;
+    promiseWorker.register(function (msg) {
+      if (i === 0) {
+        assert.equal(msg, 'ping');
+      } else if (i === 1) {
+        assert.equal(msg, 'pong');
+        done();
+      } else {
+        throw new Error('Extra message');
+      }
+
+      i += 1;
+      return 'pong';
     });
   });
 
-  it('echoes a message multiple times', function () {
+  it('echoes a message', function (done) {
+    var worker = new Worker(path + 'worker-host-echo.js');
+    var promiseWorker = new PromiseWorker(worker);
+
+    var i = 0;
+    promiseWorker.register(function (msg) {
+      if (i === 0) {
+        assert.equal(msg, 'ping');
+      } else if (i === 1) {
+        assert.equal(msg, 'ping');
+        done();
+      } else {
+        throw new Error('Extra message');
+      }
+
+      i += 1;
+      return msg;
+    });
+  });
+
+  it('pongs a message with a promise', function (done) {
+    var worker = new Worker(path + 'worker-host-ping.js');
+    var promiseWorker = new PromiseWorker(worker);
+
+    var i = 0;
+    promiseWorker.register(function (msg) {
+      if (i === 0) {
+        assert.equal(msg, 'ping');
+      } else if (i === 1) {
+        assert.equal(msg, 'pong');
+        done();
+      } else {
+        throw new Error('Extra message');
+      }
+
+      i += 1;
+      return Promise.resolve('pong');
+    });
+  });
+
+  it('pongs a message with a promise, again', function (done) {
+    var worker = new Worker(path + 'worker-host-ping.js');
+    var promiseWorker = new PromiseWorker(worker);
+
+    var i = 0;
+    promiseWorker.register(function (msg) {
+      if (i === 0) {
+        assert.equal(msg, 'ping');
+      } else if (i === 1) {
+        assert.equal(msg, 'pong');
+        done();
+      } else {
+        throw new Error('Extra message');
+      }
+
+      i += 1;
+      return Promise.resolve('pong');
+    });
+  });
+
+  it('echoes a message multiple times', function (done) {
+    var worker = new Worker(path + 'worker-host-echo-multiple.js');
     var promiseWorker = new PromiseWorker(worker);
 
     var words = [
@@ -225,11 +292,181 @@ describe('service worker test suite', function () {
       'foob', 'foobar', 'bazzy', 'fifi', 'kiki'
     ];
 
-    return Promise.all(words.map(function (word) {
-      return promiseWorker.postMessage(word).then(function (res) {
-        assert.equal(res, word);
-      });
-    }));
+    var i = 0;
+    promiseWorker.register(function (msg) {
+      assert.equal(msg, words[i % words.length]);
+      i += 1;
+
+      if (i === words.length * 2) {
+        done();
+      }
+
+      return msg;
+    });
   });
 
+  it('can have multiple PromiseWorkers', function (done) {
+    var worker = new Worker(path + 'worker-host-echo.js');
+    var promiseWorker1 = new PromiseWorker(worker);
+    var promiseWorker2 = new PromiseWorker(worker);
+
+    var i = 0;
+    var j = 0;
+
+    promiseWorker1.register(function (msg) {
+      if (i === 0) {
+        assert.equal(msg, 'ping');
+      } else if (i === 1) {
+        assert.equal(msg, 'ping');
+      } else {
+        throw new Error('Extra message');
+      }
+
+      if (i === 1 && j === 1) {
+        done();
+      }
+
+      i += 1;
+      return msg;
+    });
+
+    promiseWorker2.register(function (msg) {
+      if (j === 0) {
+        assert.equal(msg, 'ping');
+      } else if (j === 1) {
+        assert.equal(msg, 'ping');
+      } else {
+        throw new Error('Extra message');
+      }
+
+      if (i === 1 && j === 1) {
+        done();
+      }
+
+      j += 1;
+      return msg;
+    });
+
+  });
+
+  it('handles synchronous errors', function (done) {
+    var worker = new Worker(path + 'worker-host-error-sync.js');
+    var promiseWorker = new PromiseWorker(worker);
+
+    var i = 0;
+    promiseWorker.register(function (msg) {
+      if (i === 0) {
+        i += 1;
+        throw new Error('busted!');
+      } else if (i === 1) {
+        i += 1;
+        assert.equal(msg, 'done');
+        done();
+      } else {
+        throw new Error('Extra message');
+      }
+    });
+  });
+
+  it('handles asynchronous errors', function (done) {
+    var worker = new Worker(path + 'worker-host-error-async.js');
+    var promiseWorker = new PromiseWorker(worker);
+
+    var i = 0;
+    promiseWorker.register(function (msg) {
+      if (i === 0) {
+        i += 1;
+        return Promise.resolve().then(function () {
+          throw new Error('oh noes');
+        });
+      } else if (i === 1) {
+        i += 1;
+        assert.equal(msg, 'done');
+        done();
+      } else {
+        throw new Error('Extra message');
+      }
+    });
+  });
+
+  // This test is a little dicey, relies on setTimeout timing across host and worker
+  it('handles unregistered callbacks', function (done) {
+    var worker = new Worker(path + 'worker-host-empty.js');
+    var promiseWorker = new PromiseWorker(worker);
+
+    promiseWorker.register('mistake!');
+
+    setTimeout(function () {
+      promiseWorker.register(function (msg) {
+        assert.equal(msg, 'done');
+        done();
+      });
+    }, 50);
+  });
+
+  it('allows custom additional behavior', function (done) {
+    var worker = new Worker(path + 'worker-host-echo-custom.js');
+    var promiseWorker = new PromiseWorker(worker);
+
+    var i = 0;
+    promiseWorker.register(function (msg) {
+      if (i === 0) {
+        assert.equal(msg, 'ping');
+      } else if (i === 1) {
+        assert.equal(msg, 'done');
+        done();
+      } else {
+        throw new Error('Extra message');
+      }
+
+      i += 1;
+      return msg;
+    });
+
+    worker.addEventListener('message', function (e) {
+      if (typeof e.data !== 'string') { // custom message
+        worker.postMessage(e.data);
+      }
+    });
+  });
+
+});
+
+describe('bidirectional communication', function () {
+
+  this.timeout(60000);
+
+  it('echoes a message', function (done) {
+    var worker = new Worker(path + 'worker-bidirectional-echo.js');
+    var promiseWorker = new PromiseWorker(worker);
+
+    var i = 0;
+    promiseWorker.register(function (msg) {
+      if (i === 0) {
+        assert.equal(msg, 'ping');
+      } else if (i === 1) {
+        assert.equal(msg, 'ping');
+
+        promiseWorker.postMessage('pong').then(function (res) {
+          assert.equal(res, 'pong');
+          done();
+        });
+      } else {
+        throw new Error('Extra message');
+      }
+
+      i += 1;
+      return msg;
+    });
+  });
+
+});
+
+after(function () {
+  // check coverage inside the worker
+  if (typeof __coverage__ !== 'undefined' && !process.browser) {
+    require('mkdirp').sync('coverage');
+    require('fs').writeFileSync(
+      'coverage/coverage-worker.json', JSON.stringify(__coverage__), 'utf-8');
+  }
 });
