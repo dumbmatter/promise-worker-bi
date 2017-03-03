@@ -12,7 +12,7 @@ var PromiseWorker = require('../');
 
 describe('host -> worker', function () {
 
-  this.timeout(60000);
+  this.timeout(120000);
 
   it('sends a message back and forth', function () {
     var worker = new Worker(path + 'worker-pong.js');
@@ -200,7 +200,7 @@ describe('host -> worker', function () {
 
 describe('worker -> host', function () {
 
-  this.timeout(60000);
+  this.timeout(120000);
 
   it('sends a message from worker to host', function (done) {
     var worker = new Worker(path + 'worker-host-ping.js');
@@ -434,7 +434,7 @@ describe('worker -> host', function () {
 
 describe('bidirectional communication', function () {
 
-  this.timeout(60000);
+  this.timeout(120000);
 
   it('echoes a message', function (done) {
     var worker = new Worker(path + 'worker-bidirectional-echo.js');
