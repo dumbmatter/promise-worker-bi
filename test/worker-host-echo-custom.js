@@ -8,7 +8,7 @@ promiseWorker.postMessage('ping'),
 
 new Promise(function (resolve, reject) {
     function onMessage(e) {
-      if (typeof e.data === 'string') {
+      if (Array.isArray(e.data)) {
         return;
       }
       resolve(e.data);

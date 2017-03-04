@@ -10,14 +10,6 @@ function isPromise(obj) {
   return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
 }
 
-function parseJsonSafely(str) {
-  try {
-    return JSON.parse(str);
-  } catch (e) {
-    return false;
-  }
-}
-
 function tryCatchFunc(callback, message) {
   try {
     return {res: callback(message)};
@@ -43,9 +35,9 @@ PromiseWorker.prototype.register = function (cb) {
 
 PromiseWorker.prototype._postMessageBi = function (obj) {
   if (this._worker) {
-    this._worker.postMessage(JSON.stringify(obj));
+    this._worker.postMessage(obj);
   } else {
-    self.postMessage(JSON.stringify(obj));
+    self.postMessage(obj);
   }
 };
 
@@ -68,12 +60,12 @@ PromiseWorker.prototype.postMessage = function (userMessage) {
 PromiseWorker.prototype._postResponse = function (messageId, error, result) {
   if (error) {
     /* istanbul ignore else */
-    /*if (typeof console !== 'undefined' && 'error' in console) {
+    if (typeof console !== 'undefined' && 'error' in console) {
       // This is to make errors easier to debug. I think it's important
       // enough to just leave here without giving the user an option
       // to silence it.
-      console.error('Worker caught an error:', error);
-    }*/
+      console.error('Error when generating response:', error);
+    }
     this._postMessageBi([MSGTYPE_RESPONSE, messageId, {
       message: error.message
     }]);
@@ -99,8 +91,8 @@ PromiseWorker.prototype._handleQuery = function (messageId, query) {
 };
 
 PromiseWorker.prototype._onMessage = function (e) {
-  var message = parseJsonSafely(e.data);
-  if (!message) {
+  var message = e.data;
+  if (!Array.isArray(message) || message.length < 3 || message.length > 4) {
     // Ignore - this message is not for us.
     return;
   }

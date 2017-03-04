@@ -147,7 +147,7 @@ describe('host -> worker', function () {
           worker.removeEventListener('error', onError);
         }
         function onMessage(e) {
-          if (typeof e.data === 'string') {
+          if (Array.isArray(e.data)) {
             return;
           }
           cleanup();
@@ -424,7 +424,7 @@ describe('worker -> host', function () {
     });
 
     worker.addEventListener('message', function (e) {
-      if (typeof e.data !== 'string') { // custom message
+      if (!Array.isArray(e.data)) { // custom message
         worker.postMessage(e.data);
       }
     });
