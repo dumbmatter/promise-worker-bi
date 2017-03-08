@@ -3,7 +3,7 @@ promise-worker-bi [![Build Status](https://travis-ci.org/dumbmatter/promise-work
 
 [![Sauce Test Status](https://saucelabs.com/browser-matrix/promise-worker-bi.svg)](https://saucelabs.com/u/promise-worker-bi)
 
-A small and performant library for communicating with Web Workers, using Promises. Post a message to the worker, get a promise that resolves to the response. Post a message to the browser within the worker, get a promise that resolves to the response.
+A small and performant library for communicating with Web Workers, using Promises. Post a message from the browser to the worker, get a promise that resolves to the response. Post a message from the worker to the browser, get a promise that resolves to the response.
 
 This is based on [promise-worker](https://github.com/nolanlawson/promise-worker) which only allows you to send messages from the browser to the worker, not in reverse. This library allows both, using the exact same API.
 
@@ -198,8 +198,6 @@ Create a new instance of `PromiseWorker`, using the given worker.
 #### `new PromiseWorker()`
 
 Create a new instance of `PromiseWorker`.
-
-* `worker` - the `Worker` or [PseudoWorker](https://github.com/nolanlawson/pseudo-worker) to use.
 
 ### Both bundles
 
