@@ -64,7 +64,8 @@ PromiseWorker.prototype._postResponse = function (messageId, error, result) {
       // This is to make errors easier to debug. I think it's important
       // enough to just leave here without giving the user an option
       // to silence it.
-      console.error('Error when generating response:', error);
+      console.error('Error when generating response:');
+      console.error(error); // Safari needs it on new line
     }
     this._postMessageBi([MSGTYPE_RESPONSE, messageId, {
       message: error.message
