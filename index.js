@@ -1,124 +1,142 @@
-'use strict';
+// @flow
 
-var messageIds = 0;
+type QueryCallback = (any[]) => any;
 
-var MSGTYPE_QUERY = 0;
-var MSGTYPE_RESPONSE = 1;
+let messageIDs = 0;
+
+const MSGTYPE_QUERY = 0;
+const MSGTYPE_RESPONSE = 1;
 
 // Inlined from https://github.com/then/is-promise
-function isPromise(obj) {
-  return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
-}
+const isPromise = obj => !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
 
-function tryCatchFunc(callback, message) {
-  try {
-    return {res: callback(message)};
-  } catch (e) {
-    return {err: e};
+class PromiseWorker {
+  _callbacks: Map<number, (string | null, any) => void>;
+  _queryCallback: QueryCallback;
+  _worker: Worker | void;
+
+  constructor(worker?: Worker) {
+    this._callbacks = new Map();
+
+    // $FlowFixMe https://github.com/facebook/flow/issues/1517
+    this._onMessage = this._onMessage.bind(this);
+
+    if (worker === undefined) {
+      self.addEventListener('message', this._onMessage);
+    } else {
+      this._worker = worker;
+
+      // $FlowFixMe Seems to not recognize 'message' as valid type, but it is
+      worker.addEventListener('message', this._onMessage);
+    }
   }
-}
 
-function PromiseWorker(worker) {
-  if (worker === undefined) {
-    self.addEventListener('message', this._onMessage.bind(this));
-  } else {
-    this._worker = worker;
-    worker.addEventListener('message', this._onMessage.bind(this));
+  register(cb: QueryCallback) {
+    this._queryCallback = cb;
   }
 
-  this._callbacks = {};
-}
-
-PromiseWorker.prototype.register = function (cb) {
-  this._queryCallback = cb;
-};
-
-PromiseWorker.prototype._postMessageBi = function (obj) {
-  if (this._worker) {
-    this._worker.postMessage(obj);
-  } else {
-    self.postMessage(obj);
+  _postMessageBi(obj: any) {
+    if (this._worker) {
+      this._worker.postMessage(obj);
+    } else {
+      self.postMessage(obj);
+    }
   }
-};
 
-PromiseWorker.prototype.postMessage = function (userMessage) {
-  return new Promise(function (resolve, reject) {
-    var messageId = messageIds++;
+  postMessage(userMessage: any) {
+    return new Promise((resolve, reject) => {
+      const messageID = messageIDs;
+      messageIDs += 1;
 
-    var messageToSend = [MSGTYPE_QUERY, messageId, userMessage];
+      const messageToSend = [MSGTYPE_QUERY, messageID, userMessage];
 
-    this._callbacks[messageId] = function (error, result) {
-      if (error) {
-        return reject(new Error(error.message));
+      this._callbacks.set(messageID, (errorMsg: string | null, result: any) => {
+        if (errorMsg) {
+          reject(new Error(errorMsg));
+        } else {
+          resolve(result);
+        }
+      });
+      this._postMessageBi(messageToSend);
+    });
+  }
+
+  _postResponse(messageID: number, error: Error | null, result: any) {
+    if (error) {
+      /* istanbul ignore else */
+      if (typeof console !== 'undefined' && 'error' in console) {
+        // This is to make errors easier to debug. I think it's important
+        // enough to just leave here without giving the user an option
+        // to silence it.
+
+        /* eslint-disable no-console */
+        console.error('Error when generating response:');
+        console.error(error); // Safari needs it on new line
+        /* eslint-enable no-console */
       }
-      resolve(result);
-    };
-    this._postMessageBi(messageToSend);
-  }.bind(this));
-};
-
-PromiseWorker.prototype._postResponse = function (messageId, error, result) {
-  if (error) {
-    /* istanbul ignore else */
-    if (typeof console !== 'undefined' && 'error' in console) {
-      // This is to make errors easier to debug. I think it's important
-      // enough to just leave here without giving the user an option
-      // to silence it.
-      console.error('Error when generating response:');
-      console.error(error); // Safari needs it on new line
+      this._postMessageBi([MSGTYPE_RESPONSE, messageID, error.message]);
+    } else {
+      this._postMessageBi([MSGTYPE_RESPONSE, messageID, null, result]);
     }
-    this._postMessageBi([MSGTYPE_RESPONSE, messageId, {
-      message: error.message
-    }]);
-  } else {
-    this._postMessageBi([MSGTYPE_RESPONSE, messageId, null, result]);
   }
-};
 
-PromiseWorker.prototype._handleQuery = function (messageId, query) {
-  var result = tryCatchFunc(this._queryCallback, query);
+  _handleQuery(messageID: number, query: any) {
+    try {
+      const result = this._queryCallback(query);
 
-  if (result.err) {
-    this._postResponse(messageId, result.err);
-  } else if (!isPromise(result.res)) {
-    this._postResponse(messageId, null, result.res);
-  } else {
-    result.res.then(function (finalResult) {
-      this._postResponse(messageId, null, finalResult);
-    }.bind(this), function (finalError) {
-      this._postResponse(messageId, finalError);
-    }.bind(this));
+      if (!isPromise(result)) {
+        this._postResponse(messageID, null, result);
+      } else {
+        result.then((finalResult) => {
+          this._postResponse(messageID, null, finalResult);
+        }, (finalError) => {
+          this._postResponse(messageID, finalError);
+        });
+      }
+    } catch (err) {
+      this._postResponse(messageID, err);
+    }
   }
-};
 
-PromiseWorker.prototype._onMessage = function (e) {
-  var message = e.data;
-  if (!Array.isArray(message) || message.length < 3 || message.length > 4) {
-    // Ignore - this message is not for us.
-    return;
-  }
-  var type = message[0];
-  var messageId = message[1];
-
-  if (type === MSGTYPE_QUERY) {
-    var query = message[2];
-
-    this._handleQuery(messageId, query);
-  } else if (type === MSGTYPE_RESPONSE) {
-    var error = message[2];
-    var result = message[3];
-
-    var callback = this._callbacks[messageId];
-
-    if (!callback) {
-      // Ignore - user might have created multiple PromiseWorkers.
-      // This message is not for us.
-      return;
+  _onMessage(e: MessageEvent) { // eslint-disable-line no-undef
+    const message = e.data;
+    if (!Array.isArray(message) || message.length < 3 || message.length > 4) {
+      return; // Ignore - this message is not for us
     }
 
-    delete this._callbacks[messageId];
-    callback(error, result);
+    if (message[0] !== MSGTYPE_QUERY && message[0] !== MSGTYPE_RESPONSE) {
+      return; // Ignore - this message is not for us
+    }
+    const type = message[0];
+
+    if (typeof message[1] !== 'number') {
+      return; // Ignore - this message is not for us
+    }
+    const messageID: number = message[1];
+
+    if (type === MSGTYPE_QUERY) {
+      const query = message[2];
+
+      this._handleQuery(messageID, query);
+    } else if (type === MSGTYPE_RESPONSE) {
+      if (message[2] !== null && typeof message[2] !== 'string') {
+        return; // Ignore - this message is not for us
+      }
+      const errorMsg: string | null = message[2];
+      const result = message[3];
+
+      const callback = this._callbacks.get(messageID);
+
+      if (callback === undefined) {
+        // Ignore - user might have created multiple PromiseWorkers.
+        // This message is not for us.
+        return;
+      }
+
+      this._callbacks.delete(messageID);
+      callback(errorMsg, result);
+    }
   }
-};
+}
 
 module.exports = PromiseWorker;

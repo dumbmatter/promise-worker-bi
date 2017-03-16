@@ -1,33 +1,25 @@
-'use strict';
+const browserify = require('browserify');
+const fs = require('fs');
+const glob = require('glob-promise');
+const mkdirp = require('mkdirp');
+const path = require('path');
+const rimraf = require('rimraf');
+const streamToPromise = require('stream-to-promise');
 
-var denodeify = require('denodeify');
-var rimraf = denodeify(require('rimraf'));
-var mkdirp = denodeify(require('mkdirp'));
-var glob = require('glob-promise');
-var streamToPromise = require('stream-to-promise');
-var browserify = require('browserify');
-var fs = require('fs');
-var writeFile = denodeify(fs.writeFile);
-var path = require('path');
+rimraf.sync('test/bundle');
+mkdirp.sync('test/bundle');
 
-Promise.resolve().then(function () {
-  return rimraf('test/bundle');
-}).then(function () {
-  return mkdirp('test/bundle');
-}).then(function () {
-  return glob('test/worker*js');
-}).then(function (files) {
-  return Promise.all(files.map(function (file) {
-    var b = browserify(file, {debug: true});
-    if (process.env.COVERAGE === '1') {
-      b = b.transform('istanbulify');
-    }
-    b = b.bundle();
-    return streamToPromise(b).then(function (buff) {
-      var outputFile = 'bundle-' + path.basename(file);
-      return writeFile(outputFile, buff, 'utf-8');
-    });
-  }));
-}).catch(function (err) {
-  console.log(err.stack);
-});
+Promise.resolve()
+  .then(() => glob('test/worker*js'))
+  .then((files) => {
+    return Promise.all(files.map((file) => {
+      const b = browserify(file, { debug: true }).bundle();
+      return streamToPromise(b).then((buff) => {
+        const outputFile = `test/bundle/bundle-${path.basename(file)}`;
+        fs.writeFileSync(outputFile, buff, 'utf-8');
+      });
+    }));
+  })
+  .catch((err) => {
+    console.log(err.stack);
+  });

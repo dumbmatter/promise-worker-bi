@@ -13,4 +13,8 @@ browsers:
   - name: ipad
     version: '8.4..latest'
   - name: android
-    version: 5.0..latest
+version: 5.0..latest
+concurrency: 4
+tunnel:
+  type: ngrok
+  bind_tls: true

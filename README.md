@@ -235,7 +235,3 @@ Or to test manually in your browser of choice:
 Or to test in a browser using SauceLabs:
 
     npm run test-browser
-
-Or to test with coverage reports:
-
-    npm run coverage

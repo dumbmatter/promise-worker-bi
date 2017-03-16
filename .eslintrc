@@ -1,0 +1,10 @@
+{
+  parser: 'babel-eslint',
+  extends: 'airbnb-base',
+  env: {
+    worker: true,
+  },
+  rules: {
+    'no-underscore-dangle': 'off',
+  },
+}

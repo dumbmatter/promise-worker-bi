@@ -1,5 +1,3 @@
-'use strict';
-
 var assert = require('assert');
 var PromiseWorker = require('..');
 var promiseWorker = new PromiseWorker();

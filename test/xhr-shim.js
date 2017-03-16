@@ -1,5 +1,3 @@
-'use strict';
-
 // XHR shim for node
 
 var fs = require('fs');

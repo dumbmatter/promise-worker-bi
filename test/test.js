@@ -1,11 +1,11 @@
-'use strict';
+import path from 'path';
 
 if (!process.browser) {
   global.Worker = require('pseudo-worker');
   global.XMLHttpRequest = require('./xhr-shim');
 }
 
-var path = 'bundle-';
+var pathPrefix = path.join(__dirname, 'bundle/bundle-');
 
 var assert = require('assert');
 var PromiseWorker = require('../');
@@ -15,7 +15,7 @@ describe('host -> worker', function () {
   this.timeout(120000);
 
   it('sends a message back and forth', function () {
-    var worker = new Worker(path + 'worker-pong.js');
+    var worker = new Worker(pathPrefix + 'worker-pong.js');
     var promiseWorker = new PromiseWorker(worker);
 
     return promiseWorker.postMessage('ping').then(function (res) {
@@ -24,7 +24,7 @@ describe('host -> worker', function () {
   });
 
   it('echoes a message', function () {
-    var worker = new Worker(path + 'worker-echo.js');
+    var worker = new Worker(pathPrefix + 'worker-echo.js');
     var promiseWorker = new PromiseWorker(worker);
 
     return promiseWorker.postMessage('ping').then(function (res) {
@@ -33,7 +33,7 @@ describe('host -> worker', function () {
   });
 
   it('pongs a message with a promise', function () {
-    var worker = new Worker(path + 'worker-pong-promise.js');
+    var worker = new Worker(pathPrefix + 'worker-pong-promise.js');
     var promiseWorker = new PromiseWorker(worker);
 
     return promiseWorker.postMessage('ping').then(function (res) {
@@ -42,7 +42,7 @@ describe('host -> worker', function () {
   });
 
   it('pongs a message with a promise, again', function () {
-    var worker = new Worker(path + 'worker-pong-promise.js');
+    var worker = new Worker(pathPrefix + 'worker-pong-promise.js');
     var promiseWorker = new PromiseWorker(worker);
 
     return promiseWorker.postMessage('ping').then(function (res) {
@@ -51,7 +51,7 @@ describe('host -> worker', function () {
   });
 
   it('echoes a message multiple times', function () {
-    var worker = new Worker(path + 'worker-echo.js');
+    var worker = new Worker(pathPrefix + 'worker-echo.js');
     var promiseWorker = new PromiseWorker(worker);
 
     var words = [
@@ -68,7 +68,7 @@ describe('host -> worker', function () {
   });
 
   it('can have multiple PromiseWorkers', function () {
-    var worker = new Worker(path + 'worker-echo.js');
+    var worker = new Worker(pathPrefix + 'worker-echo.js');
     var promiseWorker1 = new PromiseWorker(worker);
     var promiseWorker2 = new PromiseWorker(worker);
 
@@ -83,7 +83,7 @@ describe('host -> worker', function () {
 
 
   it('can have multiple PromiseWorkers 2', function () {
-    var worker = new Worker(path + 'worker-echo.js');
+    var worker = new Worker(pathPrefix + 'worker-echo.js');
     var promiseWorkers = [
       new PromiseWorker(worker),
       new PromiseWorker(worker),
@@ -104,7 +104,7 @@ describe('host -> worker', function () {
   });
 
   it('handles synchronous errors', function () {
-    var worker = new Worker(path + 'worker-error-sync.js');
+    var worker = new Worker(pathPrefix + 'worker-error-sync.js');
     var promiseWorker = new PromiseWorker(worker);
 
     return promiseWorker.postMessage('foo').then(function () {
@@ -115,7 +115,7 @@ describe('host -> worker', function () {
   });
 
   it('handles asynchronous errors', function () {
-    var worker = new Worker(path + 'worker-error-async.js');
+    var worker = new Worker(pathPrefix + 'worker-error-async.js');
     var promiseWorker = new PromiseWorker(worker);
 
     return promiseWorker.postMessage('foo').then(function () {
@@ -126,7 +126,7 @@ describe('host -> worker', function () {
   });
 
   it('handles unregistered callbacks', function () {
-    var worker = new Worker(path + 'worker-empty.js');
+    var worker = new Worker(pathPrefix + 'worker-empty.js');
     var promiseWorker = new PromiseWorker(worker);
 
     return promiseWorker.postMessage('ping').then(function () {
@@ -137,7 +137,7 @@ describe('host -> worker', function () {
   });
 
   it('allows custom additional behavior', function () {
-    var worker = new Worker(path + 'worker-echo-custom.js');
+    var worker = new Worker(pathPrefix + 'worker-echo-custom.js');
     var promiseWorker = new PromiseWorker(worker);
     return Promise.all([
       promiseWorker.postMessage('ping'),
@@ -167,7 +167,7 @@ describe('host -> worker', function () {
   });
 
   it('allows custom additional behavior 2', function () {
-    var worker = new Worker(path + 'worker-echo-custom-2.js');
+    var worker = new Worker(pathPrefix + 'worker-echo-custom-2.js');
     var promiseWorker = new PromiseWorker(worker);
     return Promise.all([
       promiseWorker.postMessage('ping'),
@@ -203,7 +203,7 @@ describe('worker -> host', function () {
   this.timeout(120000);
 
   it('sends a message from worker to host', function (done) {
-    var worker = new Worker(path + 'worker-host-ping.js');
+    var worker = new Worker(pathPrefix + 'worker-host-ping.js');
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
@@ -223,7 +223,7 @@ describe('worker -> host', function () {
   });
 
   it('echoes a message', function (done) {
-    var worker = new Worker(path + 'worker-host-echo.js');
+    var worker = new Worker(pathPrefix + 'worker-host-echo.js');
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
@@ -243,7 +243,7 @@ describe('worker -> host', function () {
   });
 
   it('pongs a message with a promise', function (done) {
-    var worker = new Worker(path + 'worker-host-ping.js');
+    var worker = new Worker(pathPrefix + 'worker-host-ping.js');
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
@@ -263,7 +263,7 @@ describe('worker -> host', function () {
   });
 
   it('pongs a message with a promise, again', function (done) {
-    var worker = new Worker(path + 'worker-host-ping.js');
+    var worker = new Worker(pathPrefix + 'worker-host-ping.js');
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
@@ -283,7 +283,7 @@ describe('worker -> host', function () {
   });
 
   it('echoes a message multiple times', function (done) {
-    var worker = new Worker(path + 'worker-host-echo-multiple.js');
+    var worker = new Worker(pathPrefix + 'worker-host-echo-multiple.js');
     var promiseWorker = new PromiseWorker(worker);
 
     var words = [
@@ -306,7 +306,7 @@ describe('worker -> host', function () {
   });
 
   it('can have multiple PromiseWorkers', function (done) {
-    var worker = new Worker(path + 'worker-host-echo.js');
+    var worker = new Worker(pathPrefix + 'worker-host-echo.js');
     var promiseWorker1 = new PromiseWorker(worker);
     var promiseWorker2 = new PromiseWorker(worker);
 
@@ -350,7 +350,7 @@ describe('worker -> host', function () {
   });
 
   it('handles synchronous errors', function (done) {
-    var worker = new Worker(path + 'worker-host-error-sync.js');
+    var worker = new Worker(pathPrefix + 'worker-host-error-sync.js');
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
@@ -369,7 +369,7 @@ describe('worker -> host', function () {
   });
 
   it('handles asynchronous errors', function (done) {
-    var worker = new Worker(path + 'worker-host-error-async.js');
+    var worker = new Worker(pathPrefix + 'worker-host-error-async.js');
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
@@ -391,7 +391,7 @@ describe('worker -> host', function () {
 
   // This test is a little dicey, relies on setTimeout timing across host and worker
   it('handles unregistered callbacks', function (done) {
-    var worker = new Worker(path + 'worker-host-empty.js');
+    var worker = new Worker(pathPrefix + 'worker-host-empty.js');
     var promiseWorker = new PromiseWorker(worker);
 
     promiseWorker.register('mistake!');
@@ -405,7 +405,7 @@ describe('worker -> host', function () {
   });
 
   it('allows custom additional behavior', function (done) {
-    var worker = new Worker(path + 'worker-host-echo-custom.js');
+    var worker = new Worker(pathPrefix + 'worker-host-echo-custom.js');
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
@@ -437,7 +437,7 @@ describe('bidirectional communication', function () {
   this.timeout(120000);
 
   it('echoes a message', function (done) {
-    var worker = new Worker(path + 'worker-bidirectional-echo.js');
+    var worker = new Worker(pathPrefix + 'worker-bidirectional-echo.js');
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
