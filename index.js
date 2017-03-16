@@ -1,5 +1,6 @@
 // @flow
 
+console.log('hi4');
 type QueryCallback = (any[]) => any;
 
 let messageIDs = 0;
@@ -12,8 +13,11 @@ const isPromise = obj => !!obj && (typeof obj === 'object' || typeof obj === 'fu
 
 class PromiseWorker {
   _callbacks: Map<number, (string | null, any) => void>;
+  _hosts: Map<number, { port: MessagePort }>;
+  _maxHostID: number;
   _queryCallback: QueryCallback;
-  _worker: Worker | void;
+  _worker: SharedWorker | Worker | void;
+  _workerType: 'SharedWorker' | 'Worker';
 
   constructor(worker?: Worker) {
     this._callbacks = new Map();
@@ -22,12 +26,42 @@ class PromiseWorker {
     this._onMessage = this._onMessage.bind(this);
 
     if (worker === undefined) {
-      self.addEventListener('message', this._onMessage);
-    } else {
-      this._worker = worker;
+      if (typeof SharedWorkerGlobalScope !== 'undefined' && self instanceof SharedWorkerGlobalScope) {
+        this._workerType = 'SharedWorker';
 
-      // $FlowFixMe Seems to not recognize 'message' as valid type, but it is
-      worker.addEventListener('message', this._onMessage);
+        this._hosts = new Map();
+        this._maxHostID = -1;
+
+        self.addEventListener('connect', (e) => {
+          const port = e.ports[0];
+          port.addEventListener('message', (e2: MessageEvent) => this._onMessage(e2)); // eslint-disable-line no-undef
+          port.start();
+
+          this._maxHostID += 1;
+          const hostID = this._maxHostID;
+          this._hosts.set(hostID, { port });
+        });
+      } else {
+        this._workerType = 'Worker';
+
+        self.addEventListener('message', this._onMessage);
+      }
+console.log('_workerType', this._workerType);
+    } else {
+      if (worker instanceof Worker) {
+        this._workerType = 'Worker';
+
+        // $FlowFixMe Seems to not recognize 'message' as valid type, but it is
+        worker.addEventListener('message', this._onMessage);
+      } else {
+        this._workerType = 'SharedWorker';
+
+        // $FlowFixMe Seems to not recognize 'message' as valid type, but it is
+        worker.port.addEventListener('message', this._onMessage);
+        worker.port.start();
+      }
+
+      this._worker = worker;
     }
   }
 
@@ -35,15 +69,28 @@ class PromiseWorker {
     this._queryCallback = cb;
   }
 
-  _postMessageBi(obj: any) {
-    if (this._worker) {
+  _postMessageBi(obj: any[]) {
+console.log('_postMessageBi', obj);
+    if (!this._worker && this._workerType === 'SharedWorker') {
+console.log('aaa');
+      this._hosts.forEach(({ port }) => {
+console.log('bbb');
+        port.postMessage(obj);
+      });
+console.log('ccc');
+    } else if (!this._worker && this._workerType === 'Worker') {
+      self.postMessage(obj);
+    } else if (this._worker instanceof SharedWorker) {
+      this._worker.port.postMessage(obj);
+    } else if (this._worker instanceof Worker) {
       this._worker.postMessage(obj);
     } else {
-      self.postMessage(obj);
+      throw new Error('WTF');
     }
   }
 
   postMessage(userMessage: any) {
+console.log('postMessage', userMessage);
     return new Promise((resolve, reject) => {
       const messageID = messageIDs;
       messageIDs += 1;
@@ -62,6 +109,7 @@ class PromiseWorker {
   }
 
   _postResponse(messageID: number, error: Error | null, result: any) {
+console.log('_postResponse', [messageID, error, result]);
     if (error) {
       /* istanbul ignore else */
       if (typeof console !== 'undefined' && 'error' in console) {
@@ -81,6 +129,7 @@ class PromiseWorker {
   }
 
   _handleQuery(messageID: number, query: any) {
+console.log('_handleQuery', query);
     try {
       const result = this._queryCallback(query);
 
@@ -99,6 +148,7 @@ class PromiseWorker {
   }
 
   _onMessage(e: MessageEvent) { // eslint-disable-line no-undef
+console.log('_onMessage', e.data);
     const message = e.data;
     if (!Array.isArray(message) || message.length < 3 || message.length > 4) {
       return; // Ignore - this message is not for us
