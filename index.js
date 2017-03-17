@@ -1,29 +1,37 @@
 // @flow
 
-console.log('hi4');
+type Metadata = {[key: string]: any};
 type QueryCallback = (any[]) => any;
 
 let messageIDs = 0;
 
 const MSGTYPE_QUERY = 0;
 const MSGTYPE_RESPONSE = 1;
+const MSGTYPE_HOST_ID = 2;
+const MSGTYPE_METADATA = 3;
+const MSGTYPES = [MSGTYPE_QUERY, MSGTYPE_RESPONSE, MSGTYPE_HOST_ID, MSGTYPE_METADATA];
 
 // Inlined from https://github.com/then/is-promise
 const isPromise = obj => !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
 
 class PromiseWorker {
   _callbacks: Map<number, (string | null, any) => void>;
-  _hosts: Map<number, { port: MessagePort }>;
+  _hostID: number | void; // Only defined on host
+  _hosts: Map<number, { port: MessagePort }>; // Only defined on worker
   _maxHostID: number;
+  _metadata: Metadata;
   _queryCallback: QueryCallback;
   _worker: SharedWorker | Worker | void;
   _workerType: 'SharedWorker' | 'Worker';
 
   constructor(worker?: Worker) {
+// console.log('constructor', worker);
     this._callbacks = new Map();
 
     // $FlowFixMe https://github.com/facebook/flow/issues/1517
     this._onMessage = this._onMessage.bind(this);
+
+    this._metadata = {};
 
     if (worker === undefined) {
       if (typeof SharedWorkerGlobalScope !== 'undefined' && self instanceof SharedWorkerGlobalScope) {
@@ -40,13 +48,15 @@ class PromiseWorker {
           this._maxHostID += 1;
           const hostID = this._maxHostID;
           this._hosts.set(hostID, { port });
+
+          // Send back hostID to this host, otherwise it has no way to know it
+          this._postMessageBi([MSGTYPE_HOST_ID, -1, hostID], hostID);
         });
       } else {
         this._workerType = 'Worker';
 
         self.addEventListener('message', this._onMessage);
       }
-console.log('_workerType', this._workerType);
     } else {
       if (worker instanceof Worker) {
         this._workerType = 'Worker';
@@ -66,18 +76,30 @@ console.log('_workerType', this._workerType);
   }
 
   register(cb: QueryCallback) {
+// console.log('register', cb);
     this._queryCallback = cb;
   }
 
-  _postMessageBi(obj: any[]) {
-console.log('_postMessageBi', obj);
+  setMetadata(metadata: Metadata) {
+    if (this._worker === undefined) {
+      throw new Error('setMetadata cannot be called from inside a worker');
+    }
+
+throw new Error('Not implemented yet')
+
+    Object.assign(this._metadata, metadata);
+
+    this._postMessageBi([MSGTYPE_METADATA, -1, metadata, this._hostID]);
+  }
+
+  _postMessageBi(obj: any[], hostID: number | void) {
+ console.log('_postMessageBi', obj, 'target hostID', hostID);
     if (!this._worker && this._workerType === 'SharedWorker') {
-console.log('aaa');
-      this._hosts.forEach(({ port }) => {
-console.log('bbb');
-        port.postMessage(obj);
+      this._hosts.forEach(({ port }, individualHostID) => {
+        if (hostID === undefined || hostID === individualHostID) {
+          port.postMessage(obj);
+        }
       });
-console.log('ccc');
     } else if (!this._worker && this._workerType === 'Worker') {
       self.postMessage(obj);
     } else if (this._worker instanceof SharedWorker) {
@@ -90,12 +112,12 @@ console.log('ccc');
   }
 
   postMessage(userMessage: any) {
-console.log('postMessage', userMessage);
+ // console.log('postMessage', userMessage);
     return new Promise((resolve, reject) => {
       const messageID = messageIDs;
       messageIDs += 1;
 
-      const messageToSend = [MSGTYPE_QUERY, messageID, userMessage];
+      const messageToSend = [MSGTYPE_QUERY, messageID, userMessage, this._hostID];
 
       this._callbacks.set(messageID, (errorMsg: string | null, result: any) => {
         if (errorMsg) {
@@ -108,8 +130,8 @@ console.log('postMessage', userMessage);
     });
   }
 
-  _postResponse(messageID: number, error: Error | null, result: any) {
-console.log('_postResponse', [messageID, error, result]);
+  _postResponse(messageID: number, error: Error | null, result: any, hostID: number | void) {
+// console.log('_postResponse', messageID, error, result);
     if (error) {
       /* istanbul ignore else */
       if (typeof console !== 'undefined' && 'error' in console) {
@@ -122,24 +144,24 @@ console.log('_postResponse', [messageID, error, result]);
         console.error(error); // Safari needs it on new line
         /* eslint-enable no-console */
       }
-      this._postMessageBi([MSGTYPE_RESPONSE, messageID, error.message]);
+      this._postMessageBi([MSGTYPE_RESPONSE, messageID, error.message], hostID);
     } else {
-      this._postMessageBi([MSGTYPE_RESPONSE, messageID, null, result]);
+      this._postMessageBi([MSGTYPE_RESPONSE, messageID, null, result], hostID);
     }
   }
 
-  _handleQuery(messageID: number, query: any) {
-console.log('_handleQuery', query);
+  _handleQuery(messageID: number, query: any, hostID: number | void) {
+// console.log('_handleQuery', messageID, query);
     try {
       const result = this._queryCallback(query);
 
       if (!isPromise(result)) {
-        this._postResponse(messageID, null, result);
+        this._postResponse(messageID, null, result, hostID);
       } else {
         result.then((finalResult) => {
-          this._postResponse(messageID, null, finalResult);
+          this._postResponse(messageID, null, finalResult, hostID);
         }, (finalError) => {
-          this._postResponse(messageID, finalError);
+          this._postResponse(messageID, finalError, hostID);
         });
       }
     } catch (err) {
@@ -148,29 +170,33 @@ console.log('_handleQuery', query);
   }
 
   _onMessage(e: MessageEvent) { // eslint-disable-line no-undef
-console.log('_onMessage', e.data);
+// console.log('_onMessage', e.data);
     const message = e.data;
     if (!Array.isArray(message) || message.length < 3 || message.length > 4) {
       return; // Ignore - this message is not for us
     }
 
-    if (message[0] !== MSGTYPE_QUERY && message[0] !== MSGTYPE_RESPONSE) {
+    if (!MSGTYPES.includes(message[0])) {
       return; // Ignore - this message is not for us
     }
     const type = message[0];
 
     if (typeof message[1] !== 'number') {
-      return; // Ignore - this message is not for us
+      throw new Error('Invalid messageID');
     }
     const messageID: number = message[1];
 
     if (type === MSGTYPE_QUERY) {
       const query = message[2];
+      if (typeof message[3] !== 'number' && message[3] !== undefined) {
+        throw new Error('Invalid hostID');
+      }
+      const hostID: number | void = message[3];
 
-      this._handleQuery(messageID, query);
+      this._handleQuery(messageID, query, hostID);
     } else if (type === MSGTYPE_RESPONSE) {
       if (message[2] !== null && typeof message[2] !== 'string') {
-        return; // Ignore - this message is not for us
+        throw new Error('Invalid errorMsg');
       }
       const errorMsg: string | null = message[2];
       const result = message[3];
@@ -185,6 +211,19 @@ console.log('_onMessage', e.data);
 
       this._callbacks.delete(messageID);
       callback(errorMsg, result);
+    } else if (type === MSGTYPE_HOST_ID) {
+      if (this._worker === undefined) {
+        throw new Error('hostID can only be sent to a host');
+      }
+
+console.log('Host ID!');
+      if (typeof message[2] !== 'number') {
+        throw new Error('Invalid hostID');
+      }
+      const hostID: number | void = message[2];
+console.log('Setting hostID to', hostID);
+
+      this._hostID = hostID;
     }
   }
 }
