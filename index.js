@@ -19,7 +19,7 @@ class PromiseWorker {
   _hostID: number | void; // Only defined on host
   _hosts: Map<number, { port: MessagePort }>; // Only defined on worker
   _maxHostID: number;
-  _metadata: Metadata;
+  _metadata: Map<number, Metadata>;
   _queryCallback: QueryCallback;
   _worker: SharedWorker | Worker | void;
   _workerType: 'SharedWorker' | 'Worker';
@@ -31,7 +31,7 @@ class PromiseWorker {
     // $FlowFixMe https://github.com/facebook/flow/issues/1517
     this._onMessage = this._onMessage.bind(this);
 
-    this._metadata = {};
+    this._metadata = new Map();
 
     if (worker === undefined) {
       if (typeof SharedWorkerGlobalScope !== 'undefined' && self instanceof SharedWorkerGlobalScope) {
@@ -92,11 +92,11 @@ throw new Error('Not implemented yet')
     this._postMessageBi([MSGTYPE_METADATA, -1, metadata, this._hostID]);
   }
 
-  _postMessageBi(obj: any[], hostID: number | void) {
- console.log('_postMessageBi', obj, 'target hostID', hostID);
+  _postMessageBi(obj: any[], targetHostID: number | void) {
+ // console.log('_postMessageBi', obj, 'targetHostID', targetHostID);
     if (!this._worker && this._workerType === 'SharedWorker') {
-      this._hosts.forEach(({ port }, individualHostID) => {
-        if (hostID === undefined || hostID === individualHostID) {
+      this._hosts.forEach(({ port }, hostID) => {
+        if (targetHostID === undefined || targetHostID === hostID) {
           port.postMessage(obj);
         }
       });
@@ -111,7 +111,7 @@ throw new Error('Not implemented yet')
     }
   }
 
-  postMessage(userMessage: any) {
+  postMessage(userMessage: any, targetHostID: number | void) {
  // console.log('postMessage', userMessage);
     return new Promise((resolve, reject) => {
       const messageID = messageIDs;
@@ -126,7 +126,7 @@ throw new Error('Not implemented yet')
           resolve(result);
         }
       });
-      this._postMessageBi(messageToSend);
+      this._postMessageBi(messageToSend, targetHostID);
     });
   }
 
@@ -153,7 +153,7 @@ throw new Error('Not implemented yet')
   _handleQuery(messageID: number, query: any, hostID: number | void) {
 // console.log('_handleQuery', messageID, query);
     try {
-      const result = this._queryCallback(query);
+      const result = this._queryCallback(hostID, this._metadata.get(hostID), query);
 
       if (!isPromise(result)) {
         this._postResponse(messageID, null, result, hostID);
@@ -216,12 +216,10 @@ throw new Error('Not implemented yet')
         throw new Error('hostID can only be sent to a host');
       }
 
-console.log('Host ID!');
       if (typeof message[2] !== 'number') {
         throw new Error('Invalid hostID');
       }
       const hostID: number | void = message[2];
-console.log('Setting hostID to', hostID);
 
       this._hostID = hostID;
     }
