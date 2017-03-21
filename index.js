@@ -102,10 +102,10 @@ throw new Error('Not implemented yet')
       });
     } else if (!this._worker && this._workerType === 'Worker') {
       self.postMessage(obj);
-    } else if (this._worker instanceof SharedWorker) {
-      this._worker.port.postMessage(obj);
     } else if (this._worker instanceof Worker) {
       this._worker.postMessage(obj);
+    } else if (this._worker instanceof SharedWorker) {
+      this._worker.port.postMessage(obj);
     } else {
       throw new Error('WTF');
     }
