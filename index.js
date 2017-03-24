@@ -1,15 +1,13 @@
 // @flow
 
-type Metadata = {[key: string]: any};
-type QueryCallback = (any[]) => any;
+type QueryCallback = (number | void, any[]) => any;
 
 let messageIDs = 0;
 
 const MSGTYPE_QUERY = 0;
 const MSGTYPE_RESPONSE = 1;
 const MSGTYPE_HOST_ID = 2;
-const MSGTYPE_METADATA = 3;
-const MSGTYPES = [MSGTYPE_QUERY, MSGTYPE_RESPONSE, MSGTYPE_HOST_ID, MSGTYPE_METADATA];
+const MSGTYPES = [MSGTYPE_QUERY, MSGTYPE_RESPONSE, MSGTYPE_HOST_ID];
 
 // Inlined from https://github.com/then/is-promise
 const isPromise = obj => !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
@@ -19,7 +17,6 @@ class PromiseWorker {
   _hostID: number | void; // Only defined on host
   _hosts: Map<number, { port: MessagePort }>; // Only defined on worker
   _maxHostID: number;
-  _metadata: Map<number, Metadata>;
   _queryCallback: QueryCallback;
   _worker: SharedWorker | Worker | void;
   _workerType: 'SharedWorker' | 'Worker';
@@ -30,8 +27,6 @@ class PromiseWorker {
 
     // $FlowFixMe https://github.com/facebook/flow/issues/1517
     this._onMessage = this._onMessage.bind(this);
-
-    this._metadata = new Map();
 
     if (worker === undefined) {
       if (typeof SharedWorkerGlobalScope !== 'undefined' && self instanceof SharedWorkerGlobalScope) {
@@ -66,7 +61,6 @@ class PromiseWorker {
       } else {
         this._workerType = 'SharedWorker';
 
-        // $FlowFixMe Seems to not recognize 'message' as valid type, but it is
         worker.port.addEventListener('message', this._onMessage);
         worker.port.start();
       }
@@ -80,20 +74,8 @@ class PromiseWorker {
     this._queryCallback = cb;
   }
 
-  setMetadata(metadata: Metadata) {
-    if (this._worker === undefined) {
-      throw new Error('setMetadata cannot be called from inside a worker');
-    }
-
-throw new Error('Not implemented yet')
-
-    Object.assign(this._metadata, metadata);
-
-    this._postMessageBi([MSGTYPE_METADATA, -1, metadata, this._hostID]);
-  }
-
   _postMessageBi(obj: any[], targetHostID: number | void) {
- // console.log('_postMessageBi', obj, 'targetHostID', targetHostID);
+// console.log('_postMessageBi', obj, 'targetHostID', targetHostID);
     if (!this._worker && this._workerType === 'SharedWorker') {
       this._hosts.forEach(({ port }, hostID) => {
         if (targetHostID === undefined || targetHostID === hostID) {
@@ -112,7 +94,7 @@ throw new Error('Not implemented yet')
   }
 
   postMessage(userMessage: any, targetHostID: number | void) {
- // console.log('postMessage', userMessage);
+// console.log('postMessage', userMessage);
     return new Promise((resolve, reject) => {
       const messageID = messageIDs;
       messageIDs += 1;
@@ -153,7 +135,7 @@ throw new Error('Not implemented yet')
   _handleQuery(messageID: number, query: any, hostID: number | void) {
 // console.log('_handleQuery', messageID, query);
     try {
-      const result = this._queryCallback(hostID, this._metadata.get(hostID), query);
+      const result = this._queryCallback(hostID, query);
 
       if (!isPromise(result)) {
         this._postResponse(messageID, null, result, hostID);
@@ -177,7 +159,7 @@ throw new Error('Not implemented yet')
     }
 
     if (!MSGTYPES.includes(message[0])) {
-      return; // Ignore - this message is not for us
+      throw new Error('Invalid messageID');
     }
     const type = message[0];
 

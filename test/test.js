@@ -207,7 +207,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (msg) {
+    promiseWorker.register(function (hostID, msg) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
@@ -227,7 +227,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (msg) {
+    promiseWorker.register(function (hostID, msg) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
@@ -247,7 +247,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (msg) {
+    promiseWorker.register(function (hostID, msg) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
@@ -267,7 +267,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (msg) {
+    promiseWorker.register(function (hostID, msg) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
@@ -293,7 +293,7 @@ describe('worker -> host', function () {
     ];
 
     var i = 0;
-    promiseWorker.register(function (msg) {
+    promiseWorker.register(function (hostID, msg) {
       assert.equal(msg, words[i % words.length]);
       i += 1;
 
@@ -313,7 +313,7 @@ describe('worker -> host', function () {
     var i = 0;
     var j = 0;
 
-    promiseWorker1.register(function (msg) {
+    promiseWorker1.register(function (hostID, msg) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
@@ -330,7 +330,7 @@ describe('worker -> host', function () {
       return msg;
     });
 
-    promiseWorker2.register(function (msg) {
+    promiseWorker2.register(function (hostID, msg) {
       if (j === 0) {
         assert.equal(msg, 'ping');
       } else if (j === 1) {
@@ -354,7 +354,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (msg) {
+    promiseWorker.register(function (hostID, msg) {
       if (i === 0) {
         i += 1;
         throw new Error('busted!');
@@ -373,7 +373,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (msg) {
+    promiseWorker.register(function (hostID, msg) {
       if (i === 0) {
         i += 1;
         return Promise.resolve().then(function () {
@@ -397,7 +397,7 @@ describe('worker -> host', function () {
     promiseWorker.register('mistake!');
 
     setTimeout(function () {
-      promiseWorker.register(function (msg) {
+      promiseWorker.register(function (hostID, msg) {
         assert.equal(msg, 'done');
         done();
       });
@@ -409,7 +409,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (msg) {
+    promiseWorker.register(function (hostID, msg) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
@@ -441,7 +441,7 @@ describe('bidirectional communication', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (msg) {
+    promiseWorker.register(function (hostID, msg) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
