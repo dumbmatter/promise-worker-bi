@@ -3,7 +3,7 @@ promise-worker-bi [![Build Status](https://travis-ci.org/dumbmatter/promise-work
 
 [![Sauce Test Status](https://saucelabs.com/browser-matrix/promise-worker-bi.svg)](https://saucelabs.com/u/promise-worker-bi)
 
-A small and performant library for communicating with Web Workers, using Promises. Post a message from the browser to the worker, get a promise that resolves to the response. Post a message from the worker to the browser, get a promise that resolves to the response.
+A small and performant library for communicating with Web Workers and Shared Workers, using Promises. Post a message from the browser to the worker, get a promise that resolves to the response. Post a message from the worker to the browser, get a promise that resolves to the response. And with Shared Workers, you can either broadcast to all browser tabs or send a message to a specific tab.
 
 This is based on [promise-worker](https://github.com/nolanlawson/promise-worker) which only allows you to send messages from the browser to the worker, not in reverse. This library allows both, using the exact same API.
 
@@ -163,6 +163,83 @@ promiseWorker.register(function (message) {
 });
 ```
 
+### Shared Workers
+
+Shared Workers are like Web Workers, but multiple tabs of your app can share the same worker process. In this model, you have one copy of promise-worker-bi running inside your Shared Worker and one copy running in each tab the user opens of your application. Sending messages from a tab to the Shared Worker is the same as above. But when sending messages from the Shared Worker, it's different because there are potentially multiple tabs. Currently, promise-worker-bi supports either broadcasting a message to all tabs or sending a message to one specific tab.
+
+Here's an example:
+
+```js
+// main.js
+var PromiseWorker = require('promise-worker-bi');
+
+var worker = new SharedWorker('worker.js');
+var promiseWorker = new PromiseWorker(worker);
+
+promiseWorker.register(function (message) {
+  console.log(message);
+});
+
+// setTimeout is just to give you enough time to open main.js and main2.js in
+// two separate tabs.
+setTimeout(function () {
+  promiseWorker.postMessage('broadcast').then(function (response) {
+    console.log('Echoed response:', response);
+  })
+}, 1000);
+```
+
+```js
+// main2.js
+var PromiseWorker = require('promise-worker-bi');
+
+var worker = new SharedWorker('worker.js');
+var promiseWorker = new PromiseWorker(worker);
+
+promiseWorker.register(function (message) {
+  console.log(message);
+});
+
+// setTimeout is just to give you enough time to open main.js and main2.js in
+// two separate tabs.
+setTimeout(function () {
+  promiseWorker.postMessage('just this tab').then(function (response) {
+    console.log('Echoed response:', response);
+  })
+}, 2000);
+```
+
+```js
+// worker.js
+var PromiseWorker = require('promise-worker-bi');
+
+var promiseWorker = new PromiseWorker();
+
+promiseWorker.register(function (message, hostID) {
+  if (message === 'broadcast') {
+    promiseWorker.postMessage('to all tabs');
+  } else {
+    promiseWorker.postMessage('hello host ' + hostID, hostID);
+  }
+
+  return message;
+});
+
+```
+
+Then open main.js and main2.js in two browser tabs. The message sent from main.js ('broadcast') will result in worker.js sending a message to both tabs, but the message sent in main2.js will result in a message sent only to that one tab. So if you look in the consoles in your two tabs, you will see this in the first tab:
+
+    to all tabs
+    Echoed response: broadcast
+
+And this in the second tab:
+
+    to all tabs
+    hello host 1
+    Echoed response: just this tab
+
+(If you open main2.js first, "hello host 1" will instead be "hello host 0".)
+
 Browser support
 ----
 
@@ -187,7 +264,7 @@ API
 
 ### Main bundle
 
-#### `new PromiseWorker(worker)`
+#### `new PromiseWorker(worker: Worker | SharedWorker)`
 
 Create a new instance of `PromiseWorker`, using the given worker.
 
@@ -201,21 +278,23 @@ Create a new instance of `PromiseWorker`.
 
 ### Both bundles
 
-#### `PromiseWorker.register(function)`
+#### `promiseWorker.register((message: any, hostID?: number) => any)`
 
-Register a message handler wherever you will be receiving messages: in the worker, in the
-browser, or both. Your handler consumes a message and returns a Promise or value.
+Register a message handler wherever you will be receiving messages: in the
+worker, in the browser, or both. Your handler consumes a message and returns a
+Promise or value.
 
-* `function`
-  * Takes a message, returns a Promise or a value.
+The `hostID` parameter is only defined inside a SharedWorker, in which case it
+is a unique number identifying the host that the message came from.
 
-#### `PromiseWorker.postMessage(message)`
+#### `promiseWorker.postMessage(message: any, hostID?: number): Promise<any>`
 
 Send a message to the browser or worker and return a Promise.
 
-* `message` - object - required
-  * The message to send.
-* returns a Promise containing the response.
+The `hostID` parameter is only meaningful when sending a message from a
+SharedWorker. If you leave it out, it will send the message to all hosts. If you
+include it, it will send the message only to that specific host. You can get the
+`hostID` from the `promiseWorker.register` function described above.
 
 Testing the library
 ---
@@ -224,7 +303,7 @@ First:
 
     npm install
 
-Then to test in Node (using an XHR/PseudoWorker shim):
+Then to test in Node (using a Web Worker shim, and not running Shared Worker tests):
 
     npm test
 

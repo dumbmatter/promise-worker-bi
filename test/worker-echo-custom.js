@@ -1,6 +1,6 @@
 var PromiseWorker = require('..');
 var promiseWorker = new PromiseWorker();
-promiseWorker.register(function (hostID, msg) {
+promiseWorker.register(function (msg) {
   return msg;
 });
 

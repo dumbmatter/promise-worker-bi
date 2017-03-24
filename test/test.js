@@ -207,7 +207,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (hostID, msg) {
+    promiseWorker.register(function (msg) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
@@ -227,7 +227,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (hostID, msg) {
+    promiseWorker.register(function (msg) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
@@ -247,7 +247,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (hostID, msg) {
+    promiseWorker.register(function (msg) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
@@ -267,7 +267,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (hostID, msg) {
+    promiseWorker.register(function (msg) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
@@ -293,7 +293,7 @@ describe('worker -> host', function () {
     ];
 
     var i = 0;
-    promiseWorker.register(function (hostID, msg) {
+    promiseWorker.register(function (msg) {
       assert.equal(msg, words[i % words.length]);
       i += 1;
 
@@ -313,7 +313,7 @@ describe('worker -> host', function () {
     var i = 0;
     var j = 0;
 
-    promiseWorker1.register(function (hostID, msg) {
+    promiseWorker1.register(function (msg, hostID) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
@@ -330,7 +330,7 @@ describe('worker -> host', function () {
       return msg;
     });
 
-    promiseWorker2.register(function (hostID, msg) {
+    promiseWorker2.register(function (msg, hostID) {
       if (j === 0) {
         assert.equal(msg, 'ping');
       } else if (j === 1) {
@@ -354,7 +354,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (hostID, msg) {
+    promiseWorker.register(function (msg) {
       if (i === 0) {
         i += 1;
         throw new Error('busted!');
@@ -373,7 +373,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (hostID, msg) {
+    promiseWorker.register(function (msg) {
       if (i === 0) {
         i += 1;
         return Promise.resolve().then(function () {
@@ -397,7 +397,7 @@ describe('worker -> host', function () {
     promiseWorker.register('mistake!');
 
     setTimeout(function () {
-      promiseWorker.register(function (hostID, msg) {
+      promiseWorker.register(function (msg) {
         assert.equal(msg, 'done');
         done();
       });
@@ -409,7 +409,7 @@ describe('worker -> host', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (hostID, msg) {
+    promiseWorker.register(function (msg) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
@@ -441,7 +441,7 @@ describe('bidirectional communication', function () {
     var promiseWorker = new PromiseWorker(worker);
 
     var i = 0;
-    promiseWorker.register(function (hostID, msg) {
+    promiseWorker.register(function (msg) {
       if (i === 0) {
         assert.equal(msg, 'ping');
       } else if (i === 1) {
@@ -462,11 +462,43 @@ describe('bidirectional communication', function () {
 
 });
 
-after(function () {
-  // check coverage inside the worker
-  if (typeof __coverage__ !== 'undefined' && !process.browser) {
-    require('mkdirp').sync('coverage');
-    require('fs').writeFileSync(
-      'coverage/coverage-worker.json', JSON.stringify(__coverage__), 'utf-8');
-  }
+// This is a shitty test, not sure how to simulate a real multi-tab test
+describe('Shared Worker', function () {
+
+  this.timeout(120000);
+
+  const testFunc = typeof SharedWorker !== 'undefined' ? it : it.skip;
+
+  testFunc('works', function (done) {
+    var worker = new SharedWorker(pathPrefix + 'worker-shared.js');
+
+    var promiseWorker = new PromiseWorker(worker);
+
+    var i = 0;
+    var NUM_MESSAGES = 4; // 2 from broadcast, 1 from non-broadcast, and 2 from individual message responses
+    function gotMessage() {
+      i += 1;
+      if (i === 4) {
+        done();
+      }
+    }
+
+    var expected = ['to all hosts', 'to just one host'];
+    promiseWorker.register(function (msg) {
+      var expectedMsg = expected.shift();
+      assert.equal(msg, expectedMsg);
+      gotMessage();
+    });
+
+    promiseWorker.postMessage('broadcast').then(function (res) {
+      assert.equal(res, 'broadcast');
+      gotMessage();
+    }).then(function () {
+      return promiseWorker.postMessage('foo').then(function (res) {
+        assert.equal(res, 'foo');
+        gotMessage();
+      });
+    });
+  });
+
 });

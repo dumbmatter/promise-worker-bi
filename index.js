@@ -1,6 +1,6 @@
 // @flow
 
-type QueryCallback = (number | void, any[]) => any;
+type QueryCallback = (any[], number | void) => any;
 
 let messageIDs = 0;
 
@@ -75,7 +75,7 @@ class PromiseWorker {
   }
 
   _postMessageBi(obj: any[], targetHostID: number | void) {
-// console.log('_postMessageBi', obj, 'targetHostID', targetHostID);
+// console.log('_postMessageBi', obj, targetHostID);
     if (!this._worker && this._workerType === 'SharedWorker') {
       this._hosts.forEach(({ port }, hostID) => {
         if (targetHostID === undefined || targetHostID === hostID) {
@@ -94,7 +94,7 @@ class PromiseWorker {
   }
 
   postMessage(userMessage: any, targetHostID: number | void) {
-// console.log('postMessage', userMessage);
+// console.log('postMessage', userMessage, targetHostID);
     return new Promise((resolve, reject) => {
       const messageID = messageIDs;
       messageIDs += 1;
@@ -135,7 +135,7 @@ class PromiseWorker {
   _handleQuery(messageID: number, query: any, hostID: number | void) {
 // console.log('_handleQuery', messageID, query);
     try {
-      const result = this._queryCallback(hostID, query);
+      const result = this._queryCallback(query, hostID);
 
       if (!isPromise(result)) {
         this._postResponse(messageID, null, result, hostID);
