@@ -9,11 +9,11 @@ browsers:
   - name: microsoftedge
     version: 14..latest
   - name: iphone
-    version: '8.4..latest'
+    version: 8.4..latest
   - name: ipad
-    version: '8.4..latest'
+    version: 8.4..latest
   - name: android
-version: 5.0..latest
+    version: 5.1..latest
 concurrency: 4
 tunnel:
   type: ngrok

@@ -158,7 +158,7 @@ class PromiseWorker {
       return; // Ignore - this message is not for us
     }
 
-    if (!MSGTYPES.includes(message[0])) {
+    if (MSGTYPES.indexOf(message[0]) < 0) {
       throw new Error('Invalid messageID');
     }
     const type = message[0];

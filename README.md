@@ -254,6 +254,8 @@ of tested browsers, but basically:
 * iOS 8+
 * Android 4.4+
 
+Old browsers will need Map and Promise polyfills.
+
 If a browser [doesn't support Web Workers](http://caniuse.com/webworker) but you still want to use this library,
 then you can use [pseudo-worker](https://github.com/nolanlawson/pseudo-worker).
 
