@@ -12,7 +12,7 @@ var PromiseWorker = require('../');
 
 describe('host -> worker', function () {
 
-  this.timeout(60000);
+  this.timeout(120000);
 
   it('sends a message back and forth', function () {
     var worker = new Worker(pathPrefix + 'worker-pong.js');
@@ -200,7 +200,7 @@ describe('host -> worker', function () {
 
 describe('worker -> host', function () {
 
-  this.timeout(60000);
+  this.timeout(120000);
 
   it('sends a message from worker to host', function (done) {
     var worker = new Worker(pathPrefix + 'worker-host-ping.js');
@@ -434,7 +434,7 @@ describe('worker -> host', function () {
 
 describe('bidirectional communication', function () {
 
-  this.timeout(60000);
+  this.timeout(120000);
 
   it('echoes a message', function (done) {
     var worker = new Worker(pathPrefix + 'worker-bidirectional-echo.js');
@@ -465,7 +465,7 @@ describe('bidirectional communication', function () {
 // This is a shitty test, not sure how to simulate a real multi-tab test
 describe('Shared Worker', function () {
 
-  this.timeout(60000);
+  this.timeout(120000);
 
   const testFunc = typeof SharedWorker !== 'undefined' ? it : it.skip;
 
