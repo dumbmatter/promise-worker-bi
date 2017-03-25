@@ -7,7 +7,8 @@ let messageIDs = 0;
 const MSGTYPE_QUERY = 0;
 const MSGTYPE_RESPONSE = 1;
 const MSGTYPE_HOST_ID = 2;
-const MSGTYPES = [MSGTYPE_QUERY, MSGTYPE_RESPONSE, MSGTYPE_HOST_ID];
+const MSGTYPE_HOST_CLOSE = 3;
+const MSGTYPES = [MSGTYPE_QUERY, MSGTYPE_RESPONSE, MSGTYPE_HOST_ID, MSGTYPE_HOST_CLOSE];
 
 // Inlined from https://github.com/then/is-promise
 const isPromise = obj => !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
@@ -63,6 +64,17 @@ class PromiseWorker {
 
         worker.port.addEventListener('message', this._onMessage);
         worker.port.start();
+
+        // Handle tab close. This isn't perfect, but there is no perfect method
+        // http://stackoverflow.com/q/13662089/786644 and this should work like
+        // 99% of the time. It is a memory leak if it fails, but for most use
+        // cases, it shouldn't be noticeable.
+        window.addEventListener('beforeunload', () => {
+          // Prevent firing if we don't know hostID yet
+          if (this._hostID !== undefined) {
+            this._postMessageBi([MSGTYPE_HOST_CLOSE, -1, this._hostID]);
+          }
+        });
       }
 
       this._worker = worker;
@@ -77,6 +89,7 @@ class PromiseWorker {
   _postMessageBi(obj: any[], targetHostID: number | void) {
 // console.log('_postMessageBi', obj, targetHostID);
     if (!this._worker && this._workerType === 'SharedWorker') {
+      // If targetHostID has been deleted, this will do nothing, which is fine I think
       this._hosts.forEach(({ port }, hostID) => {
         if (targetHostID === undefined || targetHostID === hostID) {
           port.postMessage(obj);
@@ -195,15 +208,26 @@ class PromiseWorker {
       callback(errorMsg, result);
     } else if (type === MSGTYPE_HOST_ID) {
       if (this._worker === undefined) {
-        throw new Error('hostID can only be sent to a host');
+        throw new Error('MSGTYPE_HOST_ID can only be sent to a host');
       }
 
-      if (typeof message[2] !== 'number') {
+      if (message[2] !== undefined && typeof message[2] !== 'number') {
         throw new Error('Invalid hostID');
       }
       const hostID: number | void = message[2];
 
       this._hostID = hostID;
+    } else if (type === MSGTYPE_HOST_CLOSE) {
+      if (this._worker !== undefined) {
+        throw new Error('MSGTYPE_HOST_CLOSE can only be sent to a worker');
+      }
+
+      if (typeof message[2] !== 'number') {
+        throw new Error('Invalid hostID');
+      }
+      const hostID: number = message[2];
+
+      this._hosts.delete(hostID);
     }
   }
 }
