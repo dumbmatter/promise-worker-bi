@@ -1,6 +1,6 @@
 // @flow
 
-type ErrorCallback = (Event) => void;
+type ErrorCallback = (any) => void;
 type QueryCallback = (any[], number | void) => any;
 
 let messageIDs = 0;
@@ -9,7 +9,14 @@ const MSGTYPE_QUERY = 0;
 const MSGTYPE_RESPONSE = 1;
 const MSGTYPE_HOST_ID = 2;
 const MSGTYPE_HOST_CLOSE = 3;
-const MSGTYPES = [MSGTYPE_QUERY, MSGTYPE_RESPONSE, MSGTYPE_HOST_ID, MSGTYPE_HOST_CLOSE];
+const MSGTYPE_SHARED_WORKER_ERROR = 4;
+const MSGTYPES = [
+  MSGTYPE_QUERY,
+  MSGTYPE_RESPONSE,
+  MSGTYPE_HOST_ID,
+  MSGTYPE_HOST_CLOSE,
+  MSGTYPE_SHARED_WORKER_ERROR,
+];
 
 // Inlined from https://github.com/then/is-promise
 const isPromise = obj => !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
@@ -49,6 +56,24 @@ class PromiseWorker {
 
           // Send back hostID to this host, otherwise it has no way to know it
           this._postMessageBi([MSGTYPE_HOST_ID, -1, hostID], hostID);
+        });
+
+        self.addEventListener('error', (e: any) => {
+          /* eslint-disable no-console */
+          console.error('Error in Shared Worker');
+          console.error(e); // Safari needs it on new line
+          /* eslint-enable no-console */
+
+          // Just send to first host, so as to not duplicate error tracking
+          const hostID = this._hosts.keys().next().value;
+
+          if (hostID !== undefined) {
+            this._postMessageBi([MSGTYPE_SHARED_WORKER_ERROR, -1, {
+              message: e.message,
+              lineno: e.lineno,
+              colno: e.colno,
+            }], hostID);
+          }
         });
       } else {
         this._workerType = 'Worker';
@@ -96,6 +121,9 @@ class PromiseWorker {
 
   registerError(cb: ErrorCallback) {
 // console.log('registerError', cb);
+    if (!this._worker) {
+      throw new Error('registerError can only be called from host, not inside Worker');
+    }
     this._errorCallback = cb;
   }
 
@@ -241,6 +269,15 @@ class PromiseWorker {
       const hostID: number = message[2];
 
       this._hosts.delete(hostID);
+    } else if (type === MSGTYPE_SHARED_WORKER_ERROR) {
+      if (this._worker === undefined) {
+        throw new Error('MSGTYPE_SHARED_WORKER_ERROR can only be sent to a host');
+      }
+
+      if (message[2] !== undefined && this._errorCallback !== undefined) {
+        const errorEvent = message[2];
+        this._errorCallback(errorEvent);
+      }
     }
   }
 }

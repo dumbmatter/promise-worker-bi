@@ -119,8 +119,8 @@ Ultimately, the value that is sent from the worker to the main thread is also
 
 ### Error handling
 
-Any thrown errors or asynchronous rejections from the worker will
-be propagated to the main thread as a rejected Promise. For instance:
+Any thrown errors or asynchronous rejections during a response will be
+propagated as a rejected Promise. For instance:
 
 ```js
 promiseWorker.register(function (message) {
@@ -137,6 +137,33 @@ promiseWorker.postMessage('whoops').catch(function (err) {
 Note that stacktraces cannot be sent from the worker to the main thread, so you
 will have to debug those errors yourself. This library does however, print
 messages to `console.error()`, so you should see them there.
+
+But what about errors in the worker that are *not* during a response? (Errors in
+the host, you can handle as you would normally do.)
+
+For a Web Worker, you can just use [the normal `error` event](https://developer.mozilla.org/en-US/docs/Web/API/AbstractWorker/onerror)
+and be fine. But for a Shared Worker, that is not the case, because browsers
+seem to handle errors inside Shared Workers differently. Therefore, promise-
+worker-bi includes a unified API that works in Web Workers and Shared Workers.
+
+```js
+promiseWorker.registerError(function (e) {
+  console.log('Error inside worker!', e);
+});
+```
+
+That will work if `worker` is a Web Worker or a Shared Worker, but there are two
+differences:
+
+1. For a Shared Worker, it will only fire in the first host, to prevent
+duplicate errors from reaching an error log (assuming you're logging these
+errors somewhere).
+
+2. For a Web Worker, the returned object is an [`ErrorEvent`](https://html.spec.whatwg.org/multipage/webappapis.html#errorevent),
+which includes the stack trace. For a Shared Worker, it is simply an object like
+{message: string, lineno: number, colno: number} due to the aforementioned
+inability to send stack traces from a worker.
+
 
 ### Multi-type messages
 

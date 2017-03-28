@@ -514,4 +514,16 @@ describe('Shared Worker', function () {
     });
   });
 
+  testOnlyInBrowser('handles errors outside of responses', function (done) {
+    var worker = new SharedWorker(pathPrefix + 'worker-host-error-outside-response.js');
+    var promiseWorker = new PromiseWorker(worker);
+
+    promiseWorker.registerError(function (e) {
+      assert(e.message.indexOf('error-outside-response') >= 0);
+      assert(e.colno > 0);
+      assert(e.lineno > 0);
+      done();
+    });
+  });
+
 });
