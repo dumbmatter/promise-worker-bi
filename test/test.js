@@ -10,6 +10,9 @@ var pathPrefix = path.join(__dirname, 'bundle/bundle-');
 var assert = require('assert');
 var PromiseWorker = require('../');
 
+// Only run in browser
+const testOnlyInBrowser = typeof SharedWorker !== 'undefined' ? it : it.skip;
+
 describe('host -> worker', function () {
 
   this.timeout(120000);
@@ -389,6 +392,18 @@ describe('worker -> host', function () {
     });
   });
 
+  testOnlyInBrowser('handles errors outside of responses', function (done) {
+    var worker = new Worker(pathPrefix + 'worker-host-error-outside-response.js');
+    var promiseWorker = new PromiseWorker(worker);
+
+    promiseWorker.registerError(function (e) {
+      assert(e.message.indexOf('error-outside-response') >= 0);
+      assert(e.colno > 0);
+      assert(e.lineno > 0);
+      done();
+    });
+  });
+
   // This test is a little dicey, relies on setTimeout timing across host and worker
   it('handles unregistered callbacks', function (done) {
     var worker = new Worker(pathPrefix + 'worker-host-empty.js');
@@ -467,9 +482,7 @@ describe('Shared Worker', function () {
 
   this.timeout(120000);
 
-  const testFunc = typeof SharedWorker !== 'undefined' ? it : it.skip;
-
-  testFunc('works', function (done) {
+  testOnlyInBrowser('works', function (done) {
     var worker = new SharedWorker(pathPrefix + 'worker-shared.js');
 
     var promiseWorker = new PromiseWorker(worker);

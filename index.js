@@ -1,5 +1,6 @@
 // @flow
 
+type ErrorCallback = (Event) => void;
 type QueryCallback = (any[], number | void) => any;
 
 let messageIDs = 0;
@@ -15,6 +16,7 @@ const isPromise = obj => !!obj && (typeof obj === 'object' || typeof obj === 'fu
 
 class PromiseWorker {
   _callbacks: Map<number, (string | null, any) => void>;
+  _errorCallback: ErrorCallback | void;
   _hostID: number | void; // Only defined on host
   _hosts: Map<number, { port: MessagePort }>; // Only defined on worker
   _maxHostID: number;
@@ -59,6 +61,12 @@ class PromiseWorker {
 
         // $FlowFixMe Seems to not recognize 'message' as valid type, but it is
         worker.addEventListener('message', this._onMessage);
+
+        worker.addEventListener('error', (e: Event) => {
+          if (this._errorCallback !== undefined) {
+            this._errorCallback(e);
+          }
+        });
       } else {
         this._workerType = 'SharedWorker';
 
@@ -84,6 +92,11 @@ class PromiseWorker {
   register(cb: QueryCallback) {
 // console.log('register', cb);
     this._queryCallback = cb;
+  }
+
+  registerError(cb: ErrorCallback) {
+// console.log('registerError', cb);
+    this._errorCallback = cb;
   }
 
   _postMessageBi(obj: any[], targetHostID: number | void) {
