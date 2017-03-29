@@ -124,7 +124,15 @@ class PromiseWorker {
     if (!this._worker) {
       throw new Error('registerError can only be called from host, not inside Worker');
     }
+
     this._errorCallback = cb;
+
+    // Some browsers (Firefox) call onerror on every host, while others
+    // (Chrome) do nothing. Let's disable that everywhere, for consistency.
+    this._worker.addEventListener('error', (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
   }
 
   _postMessageBi(obj: any[], targetHostID: number | void) {
