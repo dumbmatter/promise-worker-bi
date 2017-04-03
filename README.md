@@ -143,8 +143,10 @@ the host, you can handle as you would normally do.)
 
 For a Web Worker, you can just use [the normal `error` event](https://developer.mozilla.org/en-US/docs/Web/API/AbstractWorker/onerror)
 and be fine. But for a Shared Worker, that is not the case, because browsers
-seem to handle errors inside Shared Workers differently. Therefore, promise-
-worker-bi includes a unified API that works in Web Workers and Shared Workers.
+seem to handle errors inside Shared Workers differently (currently Firefox
+seems to send the normal `error` event to all hosts, but [Chrome does not](https://bugs.chromium.org/p/chromium/issues/detail?id=105001)).
+Therefore, promise-worker-bi includes a unified API that works in Web Workers
+and Shared Workers.
 
 ```js
 promiseWorker.registerError(function (e) {
