@@ -199,6 +199,24 @@ describe('host -> worker', function () {
     ]);
   });
 
+  it('makes hostID immediately available', function () {
+    var worker = new Worker(pathPrefix + 'worker-hostid.js');
+    var promiseWorker = new PromiseWorker(worker);
+
+    return promiseWorker.postMessage('ping').then(function (res) {
+      assert.equal(res, 0);
+    }).then(function () {
+      return new Promise(function (resolve, reject) {
+        setTimeout(function () {
+          return promiseWorker.postMessage('ping').then(function (res) {
+            assert.equal(res, 0);
+            resolve();
+          }).catch(reject);
+        }, 500);
+      });
+    });
+  });
+
 });
 
 describe('worker -> host', function () {

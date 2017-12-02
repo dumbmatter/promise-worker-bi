@@ -25,6 +25,7 @@ class PromiseWorker {
   _callbacks: Map<number, (string | null, any) => void>;
   _errorCallback: ErrorCallback | void;
   _hostID: number | void; // Only defined on host
+  _hostIDQueue: (() => void)[] | void; // Only defined on host
   _hosts: Map<number, { port: MessagePort }>; // Only defined on worker
   _maxHostID: number;
   _queryCallback: QueryCallback;
@@ -79,6 +80,11 @@ class PromiseWorker {
         this._workerType = 'Worker';
 
         self.addEventListener('message', this._onMessage);
+
+        // Since this is not a Shared Worker, hostID is always 0 so it's not strictly required to
+        // send this back, but it makes the API a bit more consistent if there is the same
+        // initialization handshake in both cases.
+        this._postMessageBi([MSGTYPE_HOST_ID, -1, 0], 0);
       }
     } else {
       if (worker instanceof Worker) {
@@ -111,6 +117,7 @@ class PromiseWorker {
       }
 
       this._worker = worker;
+      this._hostIDQueue = [];
     }
   }
 
@@ -157,7 +164,7 @@ class PromiseWorker {
 
   postMessage(userMessage: any, targetHostID: number | void) {
 // console.log('postMessage', userMessage, targetHostID);
-    return new Promise((resolve, reject) => {
+    const actuallyPostMessage = (resolve, reject) => {
       const messageID = messageIDs;
       messageIDs += 1;
 
@@ -171,6 +178,18 @@ class PromiseWorker {
         }
       });
       this._postMessageBi(messageToSend, targetHostID);
+    };
+
+    return new Promise((resolve, reject) => {
+      // Outside of worker, don't send a message until hostID is known, otherwise it's a race
+      // condition and sometimes hostID will be undefined.
+      if (this._hostIDQueue !== undefined && this._hostID === undefined) {
+        this._hostIDQueue.push(() => {
+          actuallyPostMessage(resolve, reject);
+        });
+      } else {
+        actuallyPostMessage(resolve, reject);
+      }
     });
   }
 
@@ -266,6 +285,16 @@ class PromiseWorker {
       const hostID: number | void = message[2];
 
       this._hostID = hostID;
+
+      if (this._hostIDQueue !== undefined) {
+        this._hostIDQueue.forEach((func) => {
+          // Not entirely sure why setTimeout is needed, might be just for unit tests
+          setTimeout(() => {
+            func();
+          }, 0);
+        });
+        this._hostIDQueue = undefined; // Never needed again after initial setup
+      }
     } else if (type === MSGTYPE_HOST_CLOSE) {
       if (this._worker !== undefined) {
         throw new Error('MSGTYPE_HOST_CLOSE can only be sent to a worker');
