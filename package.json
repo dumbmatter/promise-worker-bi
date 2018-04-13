@@ -18,8 +18,10 @@
     "url": "git+https://github.com/dumbmatter/promise-worker-bi.git"
   },
   "keywords": [
-    "web worker",
     "promise",
+    "shared worker",
+    "sharedworker",
+    "web worker",
     "webworker",
     "worker"
   ],
