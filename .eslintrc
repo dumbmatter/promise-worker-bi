@@ -1,11 +1,12 @@
 {
-  parser: 'babel-eslint',
-  extends: 'airbnb-base',
+  parser: "babel-eslint",
+  extends: ["airbnb-base", "prettier"],
   env: {
     browser: true,
     worker: true,
   },
   rules: {
-    'no-underscore-dangle': 'off',
+    "arrow-body-style": "off",
+    "no-underscore-dangle": "off",
   },
 }

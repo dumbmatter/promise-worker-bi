@@ -1,5 +1,5 @@
-var PromiseWorker = require('..');
+var PromiseWorker = require("..");
 var promiseWorker = new PromiseWorker();
-promiseWorker.register(function () {
-  return Promise.resolve('pong');
+promiseWorker.register(function() {
+  return Promise.resolve("pong");
 });
