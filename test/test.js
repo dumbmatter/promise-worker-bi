@@ -136,6 +136,7 @@ describe("host -> worker", function() {
       },
       err => {
         assert.equal(err.message, "busted!");
+        assert(err.stack.indexOf("busted!") >= 0);
       }
     );
   });
@@ -150,6 +151,7 @@ describe("host -> worker", function() {
       },
       err => {
         assert.equal(err.message, "oh noes");
+        assert(err.stack.indexOf("oh noes") >= 0);
       }
     );
   });

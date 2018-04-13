@@ -5,14 +5,15 @@ Instead of sending error message string back, send back error object
 Instead of ErrorEvent, send back error object to registerError
 - maybe can make it an actual error object client-side, and apply all props to it
 
-tests
-
 upgrade dependencies, etc
-
-prettier?
 
 update README
 
 changelog
 - more detailed error objects (stack, etc)
 - registerError gets error, not errorevent, for consistency and simplicity
+- normalize differences in error handling caused by https://github.com/mknichel/javascript-errors/blob/master/README.md#dedicated-workers (don't rely on web worker sending error to host, use same manual mechanism used by shared workers)
+
+create issue on promise-worker
+- don't listen for error event in window, listen in worker and then send back (pull props out of error object and reassemble in host)
+- needs message types

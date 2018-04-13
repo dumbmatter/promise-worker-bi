@@ -50,8 +50,7 @@
     "pseudo-worker": "^1.1.0",
     "rimraf": "^2.5.3",
     "stream-to-promise": "^1.1.0",
-    "zuul": "^3.10.1",
-    "zuul-ngrok": "^4.0.0"
+    "zuul": "^3.10.1"
   },
   "files": [
     "dist"

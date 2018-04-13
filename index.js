@@ -1,6 +1,6 @@
 // @flow
 
-type ErrorCallback = any => void;
+type ErrorCallback = Error => void;
 type QueryCallback = (any[], number | void) => any;
 
 type FakeError = {
@@ -18,13 +18,13 @@ const MSGTYPE_QUERY = 0;
 const MSGTYPE_RESPONSE = 1;
 const MSGTYPE_HOST_ID = 2;
 const MSGTYPE_HOST_CLOSE = 3;
-const MSGTYPE_SHARED_WORKER_ERROR = 4;
+const MSGTYPE_WORKER_ERROR = 4;
 const MSGTYPES = [
   MSGTYPE_QUERY,
   MSGTYPE_RESPONSE,
   MSGTYPE_HOST_ID,
   MSGTYPE_HOST_CLOSE,
-  MSGTYPE_SHARED_WORKER_ERROR
+  MSGTYPE_WORKER_ERROR
 ];
 
 // Inlined from https://github.com/then/is-promise
@@ -94,17 +94,12 @@ class PromiseWorker {
         });
 
         self.addEventListener("error", (e: any) => {
-          /* eslint-disable no-console */
-          console.error("Error in Shared Worker");
-          console.error(e); // Safari needs it on new line
-          /* eslint-enable no-console */
-
           // Just send to first host, so as to not duplicate error tracking
           const hostID = this._hosts.keys().next().value;
 
           if (hostID !== undefined) {
             this._postMessageBi(
-              [MSGTYPE_SHARED_WORKER_ERROR, -1, toFakeError(e.error)],
+              [MSGTYPE_WORKER_ERROR, -1, toFakeError(e.error)],
               hostID
             );
           }
@@ -118,6 +113,14 @@ class PromiseWorker {
         // send this back, but it makes the API a bit more consistent if there is the same
         // initialization handshake in both cases.
         this._postMessageBi([MSGTYPE_HOST_ID, -1, 0], 0);
+
+        self.addEventListener("error", (e: any) => {
+          this._postMessageBi([
+            MSGTYPE_WORKER_ERROR,
+            -1,
+            toFakeError(e.error)
+          ]);
+        });
       }
     } else {
       if (worker instanceof Worker) {
@@ -125,13 +128,6 @@ class PromiseWorker {
 
         // $FlowFixMe Seems to not recognize 'message' as valid type, but it is
         worker.addEventListener("message", this._onMessage);
-
-        // Should be ErrorEvent rather than any, but Flow doesn't know about ErrorEvent
-        worker.addEventListener("error", (e: any) => {
-          if (this._errorCallback !== undefined) {
-            this._errorCallback(e.error);
-          }
-        });
       } else {
         this._workerType = "SharedWorker";
 
@@ -242,17 +238,6 @@ class PromiseWorker {
   ) {
     // console.log('_postResponse', messageID, error, result);
     if (error) {
-      /* istanbul ignore else */
-      if (typeof console !== "undefined" && "error" in console) {
-        // This is to make errors easier to debug. I think it's important
-        // enough to just leave here without giving the user an option
-        // to silence it.
-
-        /* eslint-disable no-console */
-        console.error("Error when generating response:");
-        console.error(error); // Safari needs it on new line
-        /* eslint-enable no-console */
-      }
       this._postMessageBi(
         [MSGTYPE_RESPONSE, messageID, toFakeError(error)],
         hostID
@@ -360,10 +345,10 @@ class PromiseWorker {
       const hostID: number = message[2];
 
       this._hosts.delete(hostID);
-    } else if (type === MSGTYPE_SHARED_WORKER_ERROR) {
+    } else if (type === MSGTYPE_WORKER_ERROR) {
       if (this._worker === undefined) {
         throw new Error(
-          "MSGTYPE_SHARED_WORKER_ERROR can only be sent to a host"
+          "MSGTYPE_WORKER_ERROR can only be sent to a host"
         );
       }
 
