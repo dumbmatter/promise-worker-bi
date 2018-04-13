@@ -6,10 +6,10 @@ type QueryCallback = (any[], number | void) => any;
 type FakeError = {
   name: string,
   message: string,
-  stack: string | void,
-  fileName: string | void,
-  columnNumber: number | void,
-  lineNumber: number | void
+  stack?: string,
+  fileName?: string,
+  columnNumber?: number,
+  lineNumber?: number
 };
 
 let messageIDs = 0;
@@ -34,14 +34,27 @@ const isPromise = obj =>
   typeof obj.then === "function";
 
 const toFakeError = (error: Error): FakeError => {
-  return {
+  const fakeError: FakeError = {
     name: error.name,
-    message: error.message,
-    stack: error.stack,
-    fileName: error.fileName,
-    columnNumber: error.columnNumber,
-    lineNumber: error.lineNumber
+    message: error.message
   };
+
+  if (typeof error.stack === "string") {
+    fakeError.stack = error.stack;
+  }
+
+  // These are non-standard properties, I think only in some versions of Firefox
+  if (typeof error.fileName === "string") {
+    fakeError.fileName = error.fileName;
+  }
+  if (typeof error.columnNumber === "number") {
+    fakeError.columnNumber = error.columnNumber;
+  }
+  if (typeof error.lineNumber === "number") {
+    fakeError.lineNumber = error.lineNumber;
+  }
+
+  return fakeError;
 };
 
 // any rather than FakeError for convenience
@@ -115,11 +128,7 @@ class PromiseWorker {
         this._postMessageBi([MSGTYPE_HOST_ID, -1, 0], 0);
 
         self.addEventListener("error", (e: any) => {
-          this._postMessageBi([
-            MSGTYPE_WORKER_ERROR,
-            -1,
-            toFakeError(e.error)
-          ]);
+          this._postMessageBi([MSGTYPE_WORKER_ERROR, -1, toFakeError(e.error)]);
         });
       }
     } else {
@@ -347,9 +356,7 @@ class PromiseWorker {
       this._hosts.delete(hostID);
     } else if (type === MSGTYPE_WORKER_ERROR) {
       if (this._worker === undefined) {
-        throw new Error(
-          "MSGTYPE_WORKER_ERROR can only be sent to a host"
-        );
+        throw new Error("MSGTYPE_WORKER_ERROR can only be sent to a host");
       }
 
       if (

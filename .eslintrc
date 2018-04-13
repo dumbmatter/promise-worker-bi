@@ -8,8 +8,8 @@
   "rules": {
     "arrow-body-style": "off",
     "func-names": "off",
-    "no-underscore-dangle": "off",
-    "no-restricted-globals": "off"
+    "no-restricted-globals": "off",
+    "no-underscore-dangle": "off"
   },
   "globals": {
     "SharedWorkerGlobalScope": false

@@ -132,7 +132,10 @@ describe("host -> worker", function() {
         assert.equal(err.message, "busted!");
 
         // Either have the file name or error message in the stack. Chrome has both, Firefox has just the file name, Node has just the error message.
-        assert(err.stack.includes("worker-error-sync") || err.stack.includes("busted!"));
+        assert(
+          err.stack.includes("worker-error-sync") ||
+            err.stack.includes("busted!")
+        );
       }
     );
   });
@@ -148,7 +151,7 @@ describe("host -> worker", function() {
       err => {
         assert.equal(err.message, "oh noes");
         // Firefox stack does not include the error message here, for some reason
-        if (!navigator || !navigator.userAgent.includes("Firefox"))  {
+        if (!navigator || !navigator.userAgent.includes("Firefox")) {
           assert(err.stack.indexOf("oh noes") >= 0);
         }
       }
