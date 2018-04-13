@@ -29,6 +29,6 @@ build/Release
 node_modules
 
 bundle-*js
-dist
+dist/test
 
 .zuulrc
