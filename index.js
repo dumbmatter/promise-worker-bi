@@ -30,7 +30,7 @@ const MSGTYPES = [
 // Inlined from https://github.com/then/is-promise
 const isPromise = obj => !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
 
-const toFakeErrorObject = (error: Error): FakeError => {
+const toFakeError = (error: Error): FakeError => {
   return {
     name: error.name,
     message: error.message,
@@ -41,13 +41,14 @@ const toFakeErrorObject = (error: Error): FakeError => {
   };
 };
 
-const fromFakeErrorObject = (fakeError: FakeError): Error => {
+// any rather than FakeError for convenience
+const fromFakeError = (fakeError: Object): Error => {
   const error = new Error();
   return Object.assign(error, fakeError);
 };
 
 class PromiseWorker {
-  _callbacks: Map<number, (string | null, any) => void>;
+  _callbacks: Map<number, (Error | null, any) => void>;
   _errorCallback: ErrorCallback | void;
   _hostID: number | void; // Only defined on host
   _hostIDQueue: (() => void)[] | void; // Only defined on host
@@ -94,7 +95,7 @@ class PromiseWorker {
           const hostID = this._hosts.keys().next().value;
 
           if (hostID !== undefined) {
-            this._postMessageBi([MSGTYPE_SHARED_WORKER_ERROR, -1, toFakeErrorObject(e.error)], hostID);
+            this._postMessageBi([MSGTYPE_SHARED_WORKER_ERROR, -1, toFakeError(e.error)], hostID);
           }
         });
       } else {
@@ -114,7 +115,8 @@ class PromiseWorker {
         // $FlowFixMe Seems to not recognize 'message' as valid type, but it is
         worker.addEventListener('message', this._onMessage);
 
-        worker.addEventListener('error', (e: Event) => {
+        // Should be ErrorEvent rather than any, but Flow doesn't know about ErrorEvent
+        worker.addEventListener('error', (e: any) => {
           if (this._errorCallback !== undefined) {
             this._errorCallback(e.error);
           }
@@ -183,7 +185,7 @@ class PromiseWorker {
     }
   }
 
-  postMessage(userMessage: any, targetHostID: number | void) {
+  postMessage(userMessage: any, targetHostID: number | void): Promise<any> {
 // console.log('postMessage', userMessage, targetHostID);
     const actuallyPostMessage = (resolve, reject) => {
       const messageID = messageIDs;
@@ -228,7 +230,7 @@ class PromiseWorker {
         console.error(error); // Safari needs it on new line
         /* eslint-enable no-console */
       }
-      this._postMessageBi([MSGTYPE_RESPONSE, messageID, toFakeErrorObject(error)], hostID);
+      this._postMessageBi([MSGTYPE_RESPONSE, messageID, toFakeError(error)], hostID);
     } else {
       this._postMessageBi([MSGTYPE_RESPONSE, messageID, null, result], hostID);
     }
@@ -282,7 +284,7 @@ class PromiseWorker {
       if (message[2] !== null && typeof message[2] !== 'object') {
         throw new Error('Invalid error');
       }
-      const error: Error | null = message[2] === null ? null : fromFakeErrorObject(message[2]);
+      const error: Error | null = message[2] === null ? null : fromFakeError(message[2]);
       const result = message[3];
 
       const callback = this._callbacks.get(messageID);
@@ -332,9 +334,11 @@ class PromiseWorker {
         throw new Error('MSGTYPE_SHARED_WORKER_ERROR can only be sent to a host');
       }
 
-      if (message[2] !== undefined && this._errorCallback !== undefined) {
-        const error = fromFakeErrorObject(message[2]);
-        this._errorCallback(error);
+      if (message[2] !== undefined && message[2] !== null && typeof message[2] === 'object') {
+        const error = fromFakeError(message[2]);
+        if (this._errorCallback !== undefined) {
+          this._errorCallback(error);
+        }
       }
     }
   }

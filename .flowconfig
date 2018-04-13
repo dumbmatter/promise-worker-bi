@@ -1,0 +1,2 @@
+[ignore]
+.*/node_modules/file-utils/tests/fixtures/iso-8859-1.json
