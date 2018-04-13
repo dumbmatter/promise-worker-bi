@@ -1,17 +1,20 @@
 ui: mocha-bdd
 browsers:
   - name: chrome
-    version: 42..latest
+    version: 49..latest
   - name: firefox
-    version: 45..latest
+    version: 52..latest
   - name: safari
-    version: 8..latest
+    version: 10..latest
   - name: microsoftedge
     version: 14..latest
   - name: iphone
-    version: 8.4..latest
+    version: latest
   - name: ipad
-    version: 8.4..latest
+    version: latest
   - name: android
-    version: 5.1..latest
+    version: latest
 concurrency: 4
+tunnel:
+  type: ngrok
+  bind_tls: true

@@ -13,7 +13,7 @@
     "mocha": "yarn run build-test && mocha dist/test/test.js",
     "test": "yarn run flow && yarn run lint && yarn run mocha",
     "test-local": "yarn run build-test && zuul --local --no-coverage dist/test/test.js",
-    "test-browser": "yarn run build-test && zuul --no-coverage ./dist/test/test.js"
+    "test-browser": "yarn run build-test && zuul --sauce-connect --no-coverage ./dist/test/test.js"
   },
   "repository": {
     "type": "git",
@@ -25,7 +25,7 @@
     "webworker",
     "worker"
   ],
-  "author": "Nolan Lawson <nolan@nolanlawson.com>",
+  "author": "Jeremy Scheff <jdscheff@gmail.com>",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/dumbmatter/promise-worker-bi/issues"
@@ -50,7 +50,8 @@
     "pseudo-worker": "^1.1.0",
     "rimraf": "^2.5.3",
     "stream-to-promise": "^1.1.0",
-    "zuul": "^3.10.1"
+    "zuul": "^3.10.1",
+    "zuul-ngrok": "nolanlawson/zuul-ngrok#patch-1"
   },
   "files": [
     "dist"

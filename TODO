@@ -15,3 +15,8 @@ changelog
 create issue on promise-worker
 - don't listen for error event in window, listen in worker and then send back (pull props out of error object and reassemble in host)
 - needs message types
+
+zuul
+- test-local works, but test-browser hanging on saucelabs
+  - try delete ngrok config
+- switch to karma?
