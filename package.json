@@ -33,7 +33,7 @@
   "homepage": "https://github.com/dumbmatter/promise-worker-bi",
   "devDependencies": {
     "babel-cli": "^6.24.0",
-    "babel-eslint": "^8.2.2",
+    "babel-eslint": "^8.2.3",
     "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "babel-preset-es2015": "^6.24.0",
     "browserify": "^16.2.0",

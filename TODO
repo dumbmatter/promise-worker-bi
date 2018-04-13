@@ -5,8 +5,6 @@ Instead of sending error message string back, send back error object
 Instead of ErrorEvent, send back error object to registerError
 - maybe can make it an actual error object client-side, and apply all props to it
 
-upgrade dependencies, etc
-
 update README
 
 changelog
