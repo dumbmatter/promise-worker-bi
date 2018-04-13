@@ -18,7 +18,7 @@ Usage
 
 Install:
 
-    npm install promise-worker-bi
+    yarn add promise-worker-bi
 
 Inside your main bundle:
 

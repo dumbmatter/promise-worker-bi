@@ -8,8 +8,4 @@
   rules: {
     'no-underscore-dangle': 'off',
   },
-  globals: {
-    "SharedWorker": false,
-    "SharedWorkerGlobalScope": false,
-  },
 }
