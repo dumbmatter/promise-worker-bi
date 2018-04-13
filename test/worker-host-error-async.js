@@ -1,12 +1,13 @@
-var assert = require("assert");
-var PromiseWorker = require("..");
-var promiseWorker = new PromiseWorker();
+const assert = require("assert");
+const PromiseWorker = require("..");
+
+const promiseWorker = new PromiseWorker();
 
 promiseWorker.postMessage("foo").then(
-  /* istanbul ignore next */ function() {
+  /* istanbul ignore next */ () => {
     throw new Error("expected an error here");
   },
-  function(err) {
+  (err) => {
     assert.equal(err.message, "oh noes");
     return promiseWorker.postMessage("done");
   }

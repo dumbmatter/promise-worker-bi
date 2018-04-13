@@ -1,12 +1,13 @@
-var assert = require("assert");
-var PromiseWorker = require("..");
-var promiseWorker = new PromiseWorker();
+const assert = require("assert");
+const PromiseWorker = require("..");
 
-promiseWorker.register(function(msg) {
+const promiseWorker = new PromiseWorker();
+
+promiseWorker.register((msg) => {
   return msg;
 });
 
-promiseWorker.postMessage("ping").then(function(msg) {
+promiseWorker.postMessage("ping").then((msg) => {
   assert.equal(msg, "ping");
 
   return promiseWorker.postMessage(msg);

@@ -1,6 +1,7 @@
-var PromiseWorker = require("..");
-var promiseWorker = new PromiseWorker();
+const PromiseWorker = require("..");
 
-setTimeout(function() {
+const promiseWorker = new PromiseWorker();
+
+setTimeout(() => {
   throw new Error("error-outside-response");
 }, 1000);

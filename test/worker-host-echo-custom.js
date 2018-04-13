@@ -1,9 +1,10 @@
-var assert = require("assert");
-var PromiseWorker = require("..");
-var promiseWorker = new PromiseWorker();
+const assert = require("assert");
+const PromiseWorker = require("..");
+
+const promiseWorker = new PromiseWorker();
 
 promiseWorker.postMessage("ping"),
-  new Promise(function(resolve, reject) {
+  new Promise(((resolve, reject) => {
     function onMessage(e) {
       if (Array.isArray(e.data)) {
         return;
@@ -20,7 +21,7 @@ promiseWorker.postMessage("ping"),
     self.addEventListener("message", onMessage);
 
     self.postMessage({ hello: "world" });
-  }).then(function(data) {
+  })).then((data) => {
     assert.equal(data.hello, "world");
     promiseWorker.postMessage("done");
   });

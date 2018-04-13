@@ -1,8 +1,9 @@
-var assert = require("assert");
-var PromiseWorker = require("..");
-var promiseWorker = new PromiseWorker();
+const assert = require("assert");
+const PromiseWorker = require("..");
 
-var words = [
+const promiseWorker = new PromiseWorker();
+
+const words = [
   "foo",
   "bar",
   "baz",
@@ -18,8 +19,8 @@ var words = [
   "kiki"
 ];
 
-words.forEach(function(word) {
-  return promiseWorker.postMessage(word).then(function(res) {
+words.forEach((word) => {
+  return promiseWorker.postMessage(word).then((res) => {
     assert.equal(res, word);
     return promiseWorker.postMessage(res);
   });

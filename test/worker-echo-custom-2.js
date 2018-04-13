@@ -1,10 +1,11 @@
-var PromiseWorker = require("..");
-var promiseWorker = new PromiseWorker();
-promiseWorker.register(function(msg) {
+const PromiseWorker = require("..");
+
+const promiseWorker = new PromiseWorker();
+promiseWorker.register((msg) => {
   return msg;
 });
 
-self.addEventListener("message", function(e) {
+self.addEventListener("message", (e) => {
   if (e.data === "[2]") {
     // custom message
     self.postMessage(e.data);

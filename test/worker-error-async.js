@@ -1,7 +1,8 @@
-var PromiseWorker = require("..");
-var promiseWorker = new PromiseWorker();
-promiseWorker.register(function() {
-  return Promise.resolve().then(function() {
+const PromiseWorker = require("..");
+
+const promiseWorker = new PromiseWorker();
+promiseWorker.register(() => {
+  return Promise.resolve().then(() => {
     throw new Error("oh noes");
   });
 });

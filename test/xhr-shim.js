@@ -1,7 +1,7 @@
 // XHR shim for node
 
-var fs = require("fs");
-var path = require("path");
+const fs = require("fs");
+const path = require("path");
 
 function XHR() {}
 
@@ -10,11 +10,11 @@ XHR.prototype.open = function(type, script) {
 };
 
 XHR.prototype.send = function() {
-  var that = this;
-  process.nextTick(function() {
+  const that = this;
+  process.nextTick(() => {
     that.readyState = 2;
     that.onreadystatechange();
-    process.nextTick(function() {
+    process.nextTick(() => {
       that.readyState = 4;
       if (fs.existsSync(that.script)) {
         that.responseText = fs.readFileSync(that.script, "utf-8");

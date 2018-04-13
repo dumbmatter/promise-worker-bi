@@ -5,10 +5,10 @@ if (!process.browser) {
   global.XMLHttpRequest = require("./xhr-shim");
 }
 
-var pathPrefix = path.join(__dirname, "bundle/bundle-");
+const pathPrefix = path.join(__dirname, "bundle/bundle-");
 
-var assert = require("assert");
-var PromiseWorker = require("../");
+const assert = require("assert");
+const PromiseWorker = require("../");
 
 // Only run in browser
 const testOnlyInBrowser = typeof SharedWorker !== "undefined" ? it : it.skip;
@@ -16,47 +16,47 @@ const testOnlyInBrowser = typeof SharedWorker !== "undefined" ? it : it.skip;
 describe("host -> worker", function() {
   this.timeout(120000);
 
-  it("sends a message back and forth", function() {
-    var worker = new Worker(pathPrefix + "worker-pong.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("sends a message back and forth", () => {
+    const worker = new Worker(`${pathPrefix}worker-pong.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    return promiseWorker.postMessage("ping").then(function(res) {
+    return promiseWorker.postMessage("ping").then((res) => {
       assert.equal(res, "pong");
     });
   });
 
-  it("echoes a message", function() {
-    var worker = new Worker(pathPrefix + "worker-echo.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("echoes a message", () => {
+    const worker = new Worker(`${pathPrefix}worker-echo.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    return promiseWorker.postMessage("ping").then(function(res) {
+    return promiseWorker.postMessage("ping").then((res) => {
       assert.equal(res, "ping");
     });
   });
 
-  it("pongs a message with a promise", function() {
-    var worker = new Worker(pathPrefix + "worker-pong-promise.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("pongs a message with a promise", () => {
+    const worker = new Worker(`${pathPrefix}worker-pong-promise.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    return promiseWorker.postMessage("ping").then(function(res) {
+    return promiseWorker.postMessage("ping").then((res) => {
       assert.equal(res, "pong");
     });
   });
 
-  it("pongs a message with a promise, again", function() {
-    var worker = new Worker(pathPrefix + "worker-pong-promise.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("pongs a message with a promise, again", () => {
+    const worker = new Worker(`${pathPrefix}worker-pong-promise.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    return promiseWorker.postMessage("ping").then(function(res) {
+    return promiseWorker.postMessage("ping").then((res) => {
       assert.equal(res, "pong");
     });
   });
 
-  it("echoes a message multiple times", function() {
-    var worker = new Worker(pathPrefix + "worker-echo.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("echoes a message multiple times", () => {
+    const worker = new Worker(`${pathPrefix}worker-echo.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    var words = [
+    const words = [
       "foo",
       "bar",
       "baz",
@@ -73,35 +73,35 @@ describe("host -> worker", function() {
     ];
 
     return Promise.all(
-      words.map(function(word) {
-        return promiseWorker.postMessage(word).then(function(res) {
+      words.map((word) => {
+        return promiseWorker.postMessage(word).then((res) => {
           assert.equal(res, word);
         });
       })
     );
   });
 
-  it("can have multiple PromiseWorkers", function() {
-    var worker = new Worker(pathPrefix + "worker-echo.js");
-    var promiseWorker1 = new PromiseWorker(worker);
-    var promiseWorker2 = new PromiseWorker(worker);
+  it("can have multiple PromiseWorkers", () => {
+    const worker = new Worker(`${pathPrefix}worker-echo.js`);
+    const promiseWorker1 = new PromiseWorker(worker);
+    const promiseWorker2 = new PromiseWorker(worker);
 
     return promiseWorker1
       .postMessage("foo")
-      .then(function(res) {
+      .then((res) => {
         assert.equal(res, "foo");
       })
-      .then(function() {
+      .then(() => {
         return promiseWorker2.postMessage("bar");
       })
-      .then(function(res) {
+      .then((res) => {
         assert.equal(res, "bar");
       });
   });
 
-  it("can have multiple PromiseWorkers 2", function() {
-    var worker = new Worker(pathPrefix + "worker-echo.js");
-    var promiseWorkers = [
+  it("can have multiple PromiseWorkers 2", () => {
+    const worker = new Worker(`${pathPrefix}worker-echo.js`);
+    const promiseWorkers = [
       new PromiseWorker(worker),
       new PromiseWorker(worker),
       new PromiseWorker(worker),
@@ -110,70 +110,70 @@ describe("host -> worker", function() {
     ];
 
     return Promise.all(
-      promiseWorkers.map(function(promiseWorker, i) {
+      promiseWorkers.map((promiseWorker, i) => {
         return promiseWorker
-          .postMessage("foo" + i)
-          .then(function(res) {
-            assert.equal(res, "foo" + i);
+          .postMessage(`foo${i}`)
+          .then((res) => {
+            assert.equal(res, `foo${i}`);
           })
-          .then(function() {
-            return promiseWorker.postMessage("bar" + i);
+          .then(() => {
+            return promiseWorker.postMessage(`bar${i}`);
           })
-          .then(function(res) {
-            assert.equal(res, "bar" + i);
+          .then((res) => {
+            assert.equal(res, `bar${i}`);
           });
       })
     );
   });
 
-  it("handles synchronous errors", function() {
-    var worker = new Worker(pathPrefix + "worker-error-sync.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("handles synchronous errors", () => {
+    const worker = new Worker(`${pathPrefix}worker-error-sync.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
     return promiseWorker.postMessage("foo").then(
-      function() {
+      () => {
         throw new Error("expected an error here");
       },
-      function(err) {
+      (err) => {
         assert.equal(err.message, "busted!");
       }
     );
   });
 
-  it("handles asynchronous errors", function() {
-    var worker = new Worker(pathPrefix + "worker-error-async.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("handles asynchronous errors", () => {
+    const worker = new Worker(`${pathPrefix}worker-error-async.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
     return promiseWorker.postMessage("foo").then(
-      function() {
+      () => {
         throw new Error("expected an error here");
       },
-      function(err) {
+      (err) => {
         assert.equal(err.message, "oh noes");
       }
     );
   });
 
-  it("handles unregistered callbacks", function() {
-    var worker = new Worker(pathPrefix + "worker-empty.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("handles unregistered callbacks", () => {
+    const worker = new Worker(`${pathPrefix}worker-empty.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
     return promiseWorker.postMessage("ping").then(
-      function() {
+      () => {
         throw new Error("expected an error here");
       },
-      function(err) {
+      (err) => {
         assert(err);
       }
     );
   });
 
-  it("allows custom additional behavior", function() {
-    var worker = new Worker(pathPrefix + "worker-echo-custom.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("allows custom additional behavior", () => {
+    const worker = new Worker(`${pathPrefix}worker-echo-custom.js`);
+    const promiseWorker = new PromiseWorker(worker);
     return Promise.all([
       promiseWorker.postMessage("ping"),
-      new Promise(function(resolve, reject) {
+      new Promise(((resolve, reject) => {
         function cleanup() {
           worker.removeEventListener("message", onMessage);
           worker.removeEventListener("error", onError);
@@ -192,18 +192,18 @@ describe("host -> worker", function() {
         worker.addEventListener("error", onError);
         worker.addEventListener("message", onMessage);
         worker.postMessage({ hello: "world" });
-      }).then(function(data) {
+      })).then((data) => {
         assert.equal(data.hello, "world");
       })
     ]);
   });
 
-  it("allows custom additional behavior 2", function() {
-    var worker = new Worker(pathPrefix + "worker-echo-custom-2.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("allows custom additional behavior 2", () => {
+    const worker = new Worker(`${pathPrefix}worker-echo-custom-2.js`);
+    const promiseWorker = new PromiseWorker(worker);
     return Promise.all([
       promiseWorker.postMessage("ping"),
-      new Promise(function(resolve, reject) {
+      new Promise(((resolve, reject) => {
         function cleanup() {
           worker.removeEventListener("message", onMessage);
           worker.removeEventListener("error", onError);
@@ -222,33 +222,33 @@ describe("host -> worker", function() {
         worker.addEventListener("error", onError);
         worker.addEventListener("message", onMessage);
         worker.postMessage("[2]");
-      }).then(function(data) {
+      })).then((data) => {
         assert.equal(data, "[2]");
       })
     ]);
   });
 
-  it("makes hostID immediately available", function() {
-    var worker = new Worker(pathPrefix + "worker-hostid.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("makes hostID immediately available", () => {
+    const worker = new Worker(`${pathPrefix}worker-hostid.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
     return promiseWorker
       .postMessage("ping")
-      .then(function(res) {
+      .then((res) => {
         assert.equal(res, 0);
       })
-      .then(function() {
-        return new Promise(function(resolve, reject) {
-          setTimeout(function() {
+      .then(() => {
+        return new Promise(((resolve, reject) => {
+          setTimeout(() => {
             return promiseWorker
               .postMessage("ping")
-              .then(function(res) {
+              .then((res) => {
                 assert.equal(res, 0);
                 resolve();
               })
               .catch(reject);
           }, 500);
-        });
+        }));
       });
   });
 });
@@ -256,12 +256,12 @@ describe("host -> worker", function() {
 describe("worker -> host", function() {
   this.timeout(120000);
 
-  it("sends a message from worker to host", function(done) {
-    var worker = new Worker(pathPrefix + "worker-host-ping.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("sends a message from worker to host", (done) => {
+    const worker = new Worker(`${pathPrefix}worker-host-ping.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    var i = 0;
-    promiseWorker.register(function(msg) {
+    let i = 0;
+    promiseWorker.register((msg) => {
       if (i === 0) {
         assert.equal(msg, "ping");
       } else if (i === 1) {
@@ -276,12 +276,12 @@ describe("worker -> host", function() {
     });
   });
 
-  it("echoes a message", function(done) {
-    var worker = new Worker(pathPrefix + "worker-host-echo.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("echoes a message", (done) => {
+    const worker = new Worker(`${pathPrefix}worker-host-echo.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    var i = 0;
-    promiseWorker.register(function(msg) {
+    let i = 0;
+    promiseWorker.register((msg) => {
       if (i === 0) {
         assert.equal(msg, "ping");
       } else if (i === 1) {
@@ -296,12 +296,12 @@ describe("worker -> host", function() {
     });
   });
 
-  it("pongs a message with a promise", function(done) {
-    var worker = new Worker(pathPrefix + "worker-host-ping.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("pongs a message with a promise", (done) => {
+    const worker = new Worker(`${pathPrefix}worker-host-ping.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    var i = 0;
-    promiseWorker.register(function(msg) {
+    let i = 0;
+    promiseWorker.register((msg) => {
       if (i === 0) {
         assert.equal(msg, "ping");
       } else if (i === 1) {
@@ -316,12 +316,12 @@ describe("worker -> host", function() {
     });
   });
 
-  it("pongs a message with a promise, again", function(done) {
-    var worker = new Worker(pathPrefix + "worker-host-ping.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("pongs a message with a promise, again", (done) => {
+    const worker = new Worker(`${pathPrefix}worker-host-ping.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    var i = 0;
-    promiseWorker.register(function(msg) {
+    let i = 0;
+    promiseWorker.register((msg) => {
       if (i === 0) {
         assert.equal(msg, "ping");
       } else if (i === 1) {
@@ -336,11 +336,11 @@ describe("worker -> host", function() {
     });
   });
 
-  it("echoes a message multiple times", function(done) {
-    var worker = new Worker(pathPrefix + "worker-host-echo-multiple.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("echoes a message multiple times", (done) => {
+    const worker = new Worker(`${pathPrefix}worker-host-echo-multiple.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    var words = [
+    const words = [
       "foo",
       "bar",
       "baz",
@@ -356,8 +356,8 @@ describe("worker -> host", function() {
       "kiki"
     ];
 
-    var i = 0;
-    promiseWorker.register(function(msg) {
+    let i = 0;
+    promiseWorker.register((msg) => {
       assert.equal(msg, words[i % words.length]);
       i += 1;
 
@@ -369,15 +369,15 @@ describe("worker -> host", function() {
     });
   });
 
-  it("can have multiple PromiseWorkers", function(done) {
-    var worker = new Worker(pathPrefix + "worker-host-echo.js");
-    var promiseWorker1 = new PromiseWorker(worker);
-    var promiseWorker2 = new PromiseWorker(worker);
+  it("can have multiple PromiseWorkers", (done) => {
+    const worker = new Worker(`${pathPrefix}worker-host-echo.js`);
+    const promiseWorker1 = new PromiseWorker(worker);
+    const promiseWorker2 = new PromiseWorker(worker);
 
-    var i = 0;
-    var j = 0;
+    let i = 0;
+    let j = 0;
 
-    promiseWorker1.register(function(msg, hostID) {
+    promiseWorker1.register((msg, hostID) => {
       if (i === 0) {
         assert.equal(msg, "ping");
       } else if (i === 1) {
@@ -394,7 +394,7 @@ describe("worker -> host", function() {
       return msg;
     });
 
-    promiseWorker2.register(function(msg, hostID) {
+    promiseWorker2.register((msg, hostID) => {
       if (j === 0) {
         assert.equal(msg, "ping");
       } else if (j === 1) {
@@ -412,12 +412,12 @@ describe("worker -> host", function() {
     });
   });
 
-  it("handles synchronous errors", function(done) {
-    var worker = new Worker(pathPrefix + "worker-host-error-sync.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("handles synchronous errors", (done) => {
+    const worker = new Worker(`${pathPrefix}worker-host-error-sync.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    var i = 0;
-    promiseWorker.register(function(msg) {
+    let i = 0;
+    promiseWorker.register((msg) => {
       if (i === 0) {
         i += 1;
         throw new Error("busted!");
@@ -431,15 +431,15 @@ describe("worker -> host", function() {
     });
   });
 
-  it("handles asynchronous errors", function(done) {
-    var worker = new Worker(pathPrefix + "worker-host-error-async.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("handles asynchronous errors", (done) => {
+    const worker = new Worker(`${pathPrefix}worker-host-error-async.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    var i = 0;
-    promiseWorker.register(function(msg) {
+    let i = 0;
+    promiseWorker.register((msg) => {
       if (i === 0) {
         i += 1;
-        return Promise.resolve().then(function() {
+        return Promise.resolve().then(() => {
           throw new Error("oh noes");
         });
       } else if (i === 1) {
@@ -452,13 +452,13 @@ describe("worker -> host", function() {
     });
   });
 
-  testOnlyInBrowser("handles errors outside of responses", function(done) {
-    var worker = new Worker(
-      pathPrefix + "worker-host-error-outside-response.js"
+  testOnlyInBrowser("handles errors outside of responses", (done) => {
+    const worker = new Worker(
+      `${pathPrefix}worker-host-error-outside-response.js`
     );
-    var promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PromiseWorker(worker);
 
-    promiseWorker.registerError(function(e) {
+    promiseWorker.registerError((e) => {
       assert(e.message.indexOf("error-outside-response") >= 0);
       assert(e.stack.indexOf("error-outside-response") >= 0);
       done();
@@ -466,26 +466,26 @@ describe("worker -> host", function() {
   });
 
   // This test is a little dicey, relies on setTimeout timing across host and worker
-  it("handles unregistered callbacks", function(done) {
-    var worker = new Worker(pathPrefix + "worker-host-empty.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("handles unregistered callbacks", (done) => {
+    const worker = new Worker(`${pathPrefix}worker-host-empty.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
     promiseWorker.register("mistake!");
 
-    setTimeout(function() {
-      promiseWorker.register(function(msg) {
+    setTimeout(() => {
+      promiseWorker.register((msg) => {
         assert.equal(msg, "done");
         done();
       });
     }, 50);
   });
 
-  it("allows custom additional behavior", function(done) {
-    var worker = new Worker(pathPrefix + "worker-host-echo-custom.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("allows custom additional behavior", (done) => {
+    const worker = new Worker(`${pathPrefix}worker-host-echo-custom.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    var i = 0;
-    promiseWorker.register(function(msg) {
+    let i = 0;
+    promiseWorker.register((msg) => {
       if (i === 0) {
         assert.equal(msg, "ping");
       } else if (i === 1) {
@@ -499,7 +499,7 @@ describe("worker -> host", function() {
       return msg;
     });
 
-    worker.addEventListener("message", function(e) {
+    worker.addEventListener("message", (e) => {
       if (!Array.isArray(e.data)) {
         // custom message
         worker.postMessage(e.data);
@@ -511,18 +511,18 @@ describe("worker -> host", function() {
 describe("bidirectional communication", function() {
   this.timeout(120000);
 
-  it("echoes a message", function(done) {
-    var worker = new Worker(pathPrefix + "worker-bidirectional-echo.js");
-    var promiseWorker = new PromiseWorker(worker);
+  it("echoes a message", (done) => {
+    const worker = new Worker(`${pathPrefix}worker-bidirectional-echo.js`);
+    const promiseWorker = new PromiseWorker(worker);
 
-    var i = 0;
-    promiseWorker.register(function(msg) {
+    let i = 0;
+    promiseWorker.register((msg) => {
       if (i === 0) {
         assert.equal(msg, "ping");
       } else if (i === 1) {
         assert.equal(msg, "ping");
 
-        promiseWorker.postMessage("pong").then(function(res) {
+        promiseWorker.postMessage("pong").then((res) => {
           assert.equal(res, "pong");
           done();
         });
@@ -540,13 +540,13 @@ describe("bidirectional communication", function() {
 describe("Shared Worker", function() {
   this.timeout(120000);
 
-  testOnlyInBrowser("works", function(done) {
-    var worker = new SharedWorker(pathPrefix + "worker-shared.js");
+  testOnlyInBrowser("works", (done) => {
+    const worker = new SharedWorker(`${pathPrefix}worker-shared.js`);
 
-    var promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PromiseWorker(worker);
 
-    var i = 0;
-    var NUM_MESSAGES = 4; // 2 from broadcast, 1 from non-broadcast, and 2 from individual message responses
+    let i = 0;
+    const NUM_MESSAGES = 4; // 2 from broadcast, 1 from non-broadcast, and 2 from individual message responses
     function gotMessage() {
       i += 1;
       if (i === 4) {
@@ -554,34 +554,34 @@ describe("Shared Worker", function() {
       }
     }
 
-    var expected = ["to all hosts", "to just one host"];
-    promiseWorker.register(function(msg) {
-      var expectedMsg = expected.shift();
+    const expected = ["to all hosts", "to just one host"];
+    promiseWorker.register((msg) => {
+      const expectedMsg = expected.shift();
       assert.equal(msg, expectedMsg);
       gotMessage();
     });
 
     promiseWorker
       .postMessage("broadcast")
-      .then(function(res) {
+      .then((res) => {
         assert.equal(res, "broadcast");
         gotMessage();
       })
-      .then(function() {
-        return promiseWorker.postMessage("foo").then(function(res) {
+      .then(() => {
+        return promiseWorker.postMessage("foo").then((res) => {
           assert.equal(res, "foo");
           gotMessage();
         });
       });
   });
 
-  testOnlyInBrowser("handles errors outside of responses", function(done) {
-    var worker = new SharedWorker(
-      pathPrefix + "worker-host-error-outside-response.js"
+  testOnlyInBrowser("handles errors outside of responses", (done) => {
+    const worker = new SharedWorker(
+      `${pathPrefix}worker-host-error-outside-response.js`
     );
-    var promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PromiseWorker(worker);
 
-    promiseWorker.registerError(function(e) {
+    promiseWorker.registerError((e) => {
       assert(e.message.indexOf("error-outside-response") >= 0);
       assert(e.stack.indexOf("error-outside-response") >= 0);
       done();
