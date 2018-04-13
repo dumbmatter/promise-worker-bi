@@ -3,11 +3,11 @@ const PromiseWorker = require("..");
 
 const promiseWorker = new PromiseWorker();
 
-promiseWorker.register((msg) => {
+promiseWorker.register(msg => {
   return msg;
 });
 
-promiseWorker.postMessage("ping").then((msg) => {
+promiseWorker.postMessage("ping").then(msg => {
   assert.equal(msg, "ping");
 
   return promiseWorker.postMessage(msg);

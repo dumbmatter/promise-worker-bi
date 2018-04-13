@@ -7,7 +7,7 @@ promiseWorker.postMessage("foo").then(
   /* istanbul ignore next */ () => {
     throw new Error("expected an error here");
   },
-  (err) => {
+  err => {
     assert.equal(err.message, "busted!");
     return promiseWorker.postMessage("done");
   }

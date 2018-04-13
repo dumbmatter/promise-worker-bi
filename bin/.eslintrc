@@ -1,9 +1,9 @@
 {
-  env: {
-    node: true,
+  "env": {
+    "node": true,
   },
-  rules: {
+  "rules": {
     "import/no-extraneous-dependencies": "off",
-    "no-console": "off",
-  },
+    "no-console": "off"
+  }
 }

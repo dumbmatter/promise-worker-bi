@@ -1,12 +1,17 @@
 {
-  parser: "babel-eslint",
-  extends: ["airbnb-base", "prettier"],
-  env: {
-    browser: true,
-    worker: true,
+  "parser": "babel-eslint",
+  "extends": ["airbnb-base", "prettier"],
+  "env": {
+    "browser": true,
+    "worker": true
   },
-  rules: {
+  "rules": {
     "arrow-body-style": "off",
+    "func-names": "off",
     "no-underscore-dangle": "off",
+    "no-restricted-globals": "off"
   },
+  "globals": {
+    "SharedWorkerGlobalScope": false
+  }
 }

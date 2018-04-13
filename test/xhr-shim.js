@@ -1,7 +1,6 @@
 // XHR shim for node
 
 const fs = require("fs");
-const path = require("path");
 
 function XHR() {}
 

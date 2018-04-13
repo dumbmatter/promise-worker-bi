@@ -1,5 +1,6 @@
 const PromiseWorker = require("..");
 
+// eslint-disable-next-line no-unused-vars
 const promiseWorker = new PromiseWorker();
 
 setTimeout(() => {
