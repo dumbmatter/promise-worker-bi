@@ -416,8 +416,7 @@ describe('worker -> host', function () {
 
     promiseWorker.registerError(function (e) {
       assert(e.message.indexOf('error-outside-response') >= 0);
-      assert(typeof e.colno === 'number');
-      assert(typeof e.lineno === 'number');
+      assert(e.stack.indexOf('error-outside-response') >= 0);
       done();
     });
   });
@@ -538,8 +537,7 @@ describe('Shared Worker', function () {
 
     promiseWorker.registerError(function (e) {
       assert(e.message.indexOf('error-outside-response') >= 0);
-      assert(typeof e.colno === 'number');
-      assert(typeof e.lineno === 'number');
+      assert(e.stack.indexOf('error-outside-response') >= 0);
       done();
     });
   });

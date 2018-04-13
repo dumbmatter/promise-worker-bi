@@ -1,0 +1,14 @@
+GOALS:
+
+Instead of sending error message string back, send back error object
+- https://github.com/dfahlander/typeson-registry/issues/10
+Instead of ErrorEvent, send back error object to registerError
+- maybe can make it an actual error object client-side, and apply all props to it
+
+tests
+
+upgrade dependencies, etc
+
+prettier?
+
+update README

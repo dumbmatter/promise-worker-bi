@@ -3,6 +3,15 @@
 type ErrorCallback = (any) => void;
 type QueryCallback = (any[], number | void) => any;
 
+type FakeError = {
+  name: string,
+  message: string,
+  stack: string | void,
+  fileName: string | void,
+  columnNumber: number | void,
+  lineNumber: number | void,
+};
+
 let messageIDs = 0;
 
 const MSGTYPE_QUERY = 0;
@@ -20,6 +29,22 @@ const MSGTYPES = [
 
 // Inlined from https://github.com/then/is-promise
 const isPromise = obj => !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
+
+const toFakeErrorObject = (error: Error): FakeError => {
+  return {
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+    fileName: error.fileName,
+    columnNumber: error.columnNumber,
+    lineNumber: error.lineNumber,
+  };
+};
+
+const fromFakeErrorObject = (fakeError: FakeError): Error => {
+  const error = new Error();
+  return Object.assign(error, fakeError);
+};
 
 class PromiseWorker {
   _callbacks: Map<number, (string | null, any) => void>;
@@ -69,11 +94,7 @@ class PromiseWorker {
           const hostID = this._hosts.keys().next().value;
 
           if (hostID !== undefined) {
-            this._postMessageBi([MSGTYPE_SHARED_WORKER_ERROR, -1, {
-              message: e.message,
-              lineno: e.lineno,
-              colno: e.colno,
-            }], hostID);
+            this._postMessageBi([MSGTYPE_SHARED_WORKER_ERROR, -1, toFakeErrorObject(e.error)], hostID);
           }
         });
       } else {
@@ -95,7 +116,7 @@ class PromiseWorker {
 
         worker.addEventListener('error', (e: Event) => {
           if (this._errorCallback !== undefined) {
-            this._errorCallback(e);
+            this._errorCallback(e.error);
           }
         });
       } else {
@@ -170,9 +191,9 @@ class PromiseWorker {
 
       const messageToSend = [MSGTYPE_QUERY, messageID, userMessage, this._hostID];
 
-      this._callbacks.set(messageID, (errorMsg: string | null, result: any) => {
-        if (errorMsg) {
-          reject(new Error(errorMsg));
+      this._callbacks.set(messageID, (error: Error | null, result: any) => {
+        if (error) {
+          reject(error);
         } else {
           resolve(result);
         }
@@ -207,7 +228,7 @@ class PromiseWorker {
         console.error(error); // Safari needs it on new line
         /* eslint-enable no-console */
       }
-      this._postMessageBi([MSGTYPE_RESPONSE, messageID, error.message], hostID);
+      this._postMessageBi([MSGTYPE_RESPONSE, messageID, toFakeErrorObject(error)], hostID);
     } else {
       this._postMessageBi([MSGTYPE_RESPONSE, messageID, null, result], hostID);
     }
@@ -258,10 +279,10 @@ class PromiseWorker {
 
       this._handleQuery(messageID, query, hostID);
     } else if (type === MSGTYPE_RESPONSE) {
-      if (message[2] !== null && typeof message[2] !== 'string') {
-        throw new Error('Invalid errorMsg');
+      if (message[2] !== null && typeof message[2] !== 'object') {
+        throw new Error('Invalid error');
       }
-      const errorMsg: string | null = message[2];
+      const error: Error | null = message[2] === null ? null : fromFakeErrorObject(message[2]);
       const result = message[3];
 
       const callback = this._callbacks.get(messageID);
@@ -273,7 +294,7 @@ class PromiseWorker {
       }
 
       this._callbacks.delete(messageID);
-      callback(errorMsg, result);
+      callback(error, result);
     } else if (type === MSGTYPE_HOST_ID) {
       if (this._worker === undefined) {
         throw new Error('MSGTYPE_HOST_ID can only be sent to a host');
@@ -312,8 +333,8 @@ class PromiseWorker {
       }
 
       if (message[2] !== undefined && this._errorCallback !== undefined) {
-        const errorEvent = message[2];
-        this._errorCallback(errorEvent);
+        const error = fromFakeErrorObject(message[2]);
+        this._errorCallback(error);
       }
     }
   }
