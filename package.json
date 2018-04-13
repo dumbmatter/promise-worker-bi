@@ -6,14 +6,12 @@
   "scripts": {
     "prepublish": "yarn run build",
     "build": "rimraf dist && mkdirp dist && babel index.js --out-file dist/index.js",
-    "build-test": "yarn run build && node bin/build-worker-bundles.js && babel test -d dist/test",
+    "build-test": "yarn run build && node bin/build-worker-bundles.js && babel test -d dist/test && browserify test/test.js -o dist/test/test.js -t babelify",
     "flow": "flow; test $? -eq 0 -o $? -eq 2",
     "lint": "eslint *.js test/*.js bin/*.js",
     "prettier": "prettier --write '*.js' && prettier --write 'test/*.js' && prettier --write 'bin/*.js'",
-    "mocha": "yarn run build-test && NODE_ENV=test mocha dist/test/test.js",
-    "test": "yarn run flow && yarn run lint && yarn run mocha",
-    "test-local": "yarn run build-test && browserify test/test.js -o dist/test/test.js -t babelify && karma start",
-    "test-browser": "yarn run build-test && browserify test/test.js -o dist/test/test.js -t babelify && zuul --sauce-connect --no-coverage ./dist/test/test.js"
+    "karma": "yarn run build-test && karma start",
+    "test": "yarn run flow && yarn run lint && yarn run karma"
   },
   "repository": {
     "type": "git",
@@ -53,7 +51,6 @@
     "mkdirp": "^0.5.1",
     "mocha": "^5.1.0",
     "prettier": "^1.12.0",
-    "pseudo-worker": "^1.1.0",
     "rimraf": "^2.5.3",
     "stream-to-promise": "^1.1.0"
   },

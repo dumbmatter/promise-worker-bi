@@ -1,17 +1,11 @@
+const assert = require("assert");
 const path = require("path");
-
-if (!process.browser) {
-  global.Worker = require("pseudo-worker");
-  global.XMLHttpRequest = require("./xhr-shim");
-}
+const PromiseWorker = require("../");
 
 const pathPrefix = path.join(__dirname, "bundle/bundle-");
 
-const assert = require("assert");
-const PromiseWorker = require("../");
-
 // Only run in browser
-const testOnlyInBrowser = typeof SharedWorker !== "undefined" ? it : it.skip;
+const testSharedWorker = typeof SharedWorker !== "undefined" ? it : it.skip;
 
 describe("host -> worker", function() {
   this.timeout(120000);
@@ -464,7 +458,7 @@ describe("worker -> host", function() {
     });
   });
 
-  testOnlyInBrowser("handles errors outside of responses", done => {
+  testSharedWorker("handles errors outside of responses", done => {
     const worker = new Worker(
       `${pathPrefix}worker-host-error-outside-response.js`
     );
@@ -552,7 +546,7 @@ describe("bidirectional communication", function() {
 describe("Shared Worker", function() {
   this.timeout(120000);
 
-  testOnlyInBrowser("works", done => {
+  testSharedWorker("works", done => {
     const worker = new SharedWorker(`${pathPrefix}worker-shared.js`);
 
     const promiseWorker = new PromiseWorker(worker);
@@ -587,7 +581,7 @@ describe("Shared Worker", function() {
       });
   });
 
-  testOnlyInBrowser("handles errors outside of responses", done => {
+  testSharedWorker("handles errors outside of responses", done => {
     const worker = new SharedWorker(
       `${pathPrefix}worker-host-error-outside-response.js`
     );
