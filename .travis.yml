@@ -7,7 +7,7 @@ dist: trusty # needs Ubuntu Trusty
 sudo: required
 addons:
   chrome: stable
-  firefox: stable
+  firefox: latest
 cache:
   yarn: true
   directories:
