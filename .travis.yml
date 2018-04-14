@@ -1,4 +1,18 @@
 language: node_js
 node_js:
-  - "node"
-  - "4"
+  - "8"
+dist: trusty # needs Ubuntu Trusty
+# Note: if you switch to sudo: false, you'll need to launch chrome with --no-sandbox.
+# See https://github.com/travis-ci/travis-ci/issues/8836
+sudo: required
+addons:
+  chrome: stable
+  firefox: stable
+cache:
+  yarn: true
+  directories:
+    - node_modules
+install:
+  - yarn
+script:
+  - yarn test
