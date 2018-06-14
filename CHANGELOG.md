@@ -1,3 +1,7 @@
+# v3.0.1, 2018-06-13
+
+Restore `console.error` logging for errors in the worker, because otherwise it can be difficult to debug live since the errors sent back to the window by promise-worker-pi do not have source maps applied.
+
 # v3.0.0, 2018-04-14
 
 v3.0.0 brings better and more consistent error handling!
