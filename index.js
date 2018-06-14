@@ -63,6 +63,14 @@ const fromFakeError = (fakeError: Object): Error => {
   return Object.assign(error, fakeError);
 };
 
+const logError = (err: Error) => {
+  // Logging in the console makes debugging in the worker easier
+  /* eslint-disable no-console */
+  console.error('Error in Worker:');
+  console.error(err); // Safari needs it on new line
+  /* eslint-enable no-console */
+};
+
 class PromiseWorker {
   _callbacks: Map<number, (Error | null, any) => void>;
   _errorCallback: ErrorCallback | void;
@@ -107,6 +115,8 @@ class PromiseWorker {
         });
 
         self.addEventListener("error", (e: any) => {
+          logError(e.error);
+
           // Just send to first host, so as to not duplicate error tracking
           const hostID = this._hosts.keys().next().value;
 
@@ -128,6 +138,8 @@ class PromiseWorker {
         this._postMessageBi([MSGTYPE_HOST_ID, -1, 0], 0);
 
         self.addEventListener("error", (e: any) => {
+          logError(e.error);
+
           this._postMessageBi([MSGTYPE_WORKER_ERROR, -1, toFakeError(e.error)]);
         });
       }
@@ -247,6 +259,8 @@ class PromiseWorker {
   ) {
     // console.log('_postResponse', messageID, error, result);
     if (error) {
+      logError(error);
+
       this._postMessageBi(
         [MSGTYPE_RESPONSE, messageID, toFakeError(error)],
         hostID
