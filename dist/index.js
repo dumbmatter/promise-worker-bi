@@ -50,6 +50,14 @@ var fromFakeError = function fromFakeError(fakeError) {
   return Object.assign(error, fakeError);
 };
 
+var logError = function logError(err) {
+  // Logging in the console makes debugging in the worker easier
+  /* eslint-disable no-console */
+  console.error('Error in Worker:');
+  console.error(err); // Safari needs it on new line
+  /* eslint-enable no-console */
+};
+
 var PromiseWorker = function () {
   // Only defined on worker
   // Only defined on host
@@ -87,6 +95,8 @@ var PromiseWorker = function () {
         });
 
         self.addEventListener("error", function (e) {
+          logError(e.error);
+
           // Just send to first host, so as to not duplicate error tracking
           var hostID = _this._hosts.keys().next().value;
 
@@ -105,6 +115,8 @@ var PromiseWorker = function () {
         this._postMessageBi([MSGTYPE_HOST_ID, -1, 0], 0);
 
         self.addEventListener("error", function (e) {
+          logError(e.error);
+
           _this._postMessageBi([MSGTYPE_WORKER_ERROR, -1, toFakeError(e.error)]);
         });
       }
@@ -223,6 +235,8 @@ var PromiseWorker = function () {
     value: function _postResponse(messageID, error, result, hostID) {
       // console.log('_postResponse', messageID, error, result);
       if (error) {
+        logError(error);
+
         this._postMessageBi([MSGTYPE_RESPONSE, messageID, toFakeError(error)], hostID);
       } else {
         this._postMessageBi([MSGTYPE_RESPONSE, messageID, null, result], hostID);
