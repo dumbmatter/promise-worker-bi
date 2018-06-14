@@ -1,6 +1,6 @@
 {
   "name": "promise-worker-bi",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Bidirectional communication with a Web Worker using Promises",
   "main": "dist/index.js",
   "scripts": {
