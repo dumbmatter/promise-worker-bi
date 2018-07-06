@@ -121,7 +121,16 @@ var PromiseWorker = function () {
         });
       }
     } else {
-      if (worker instanceof Worker) {
+      // The following if statement used to check `worker instanceof Worker` but I have recieved
+      // reports that in some weird cases, Safari will inappropriately return false for that, even
+      // in obvious cases like:
+      //
+      //     blob = new Blob(["self.onmessage = function() {};"], { type: "text/javascript" });
+      //     worker = new Worker(window.URL.createObjectURL(blob));
+      //     console.log(worker instanceof Worker);
+      //
+      // So instead, let's do this test for worker.port which only exists on shared workers.
+      if (worker.port === undefined) {
         this._workerType = "Worker";
 
         // $FlowFixMe Seems to not recognize 'message' as valid type, but it is
@@ -129,7 +138,9 @@ var PromiseWorker = function () {
       } else {
         this._workerType = "SharedWorker";
 
+        // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
         worker.port.addEventListener("message", this._onMessage);
+        // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
         worker.port.start();
 
         // Handle tab close. This isn't perfect, but there is no perfect method
@@ -188,9 +199,11 @@ var PromiseWorker = function () {
         });
       } else if (!this._worker && this._workerType === "Worker") {
         self.postMessage(obj);
-      } else if (this._worker instanceof Worker) {
+      } else if (this._workerType === "Worker") {
+        // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
         this._worker.postMessage(obj);
-      } else if (this._worker instanceof SharedWorker) {
+      } else if (this._workerType === "SharedWorker") {
+        // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
         this._worker.port.postMessage(obj);
       } else {
         throw new Error("WTF");
