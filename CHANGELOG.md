@@ -1,3 +1,13 @@
+# v3.0.2, 2018-07-06
+
+This should obviously print "true":
+
+    blob = new Blob(["self.onmessage = function() {};"], { type: "text/javascript" });
+    worker = new Worker(window.URL.createObjectURL(blob));
+    console.log(worker instanceof Worker);
+
+However in some rare cases, it will print "false" in Safari. This caused bugs in prior versions of promise-worker-bi, but this release includes a workaround.
+
 # v3.0.1, 2018-06-13
 
 Restore `console.error` logging for errors in the worker, because otherwise it can be difficult to debug live since the errors sent back to the window by promise-worker-pi do not have source maps applied.
