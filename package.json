@@ -7,7 +7,7 @@
     "prepublish": "yarn run build",
     "build": "rimraf dist && mkdirp dist && babel index.js --out-file dist/index.js",
     "build-test": "yarn run build && node bin/build-worker-bundles.js && babel test -d dist/test && browserify test/test.js -o dist/test/test.js -t babelify",
-    "flow": "flow; test $? -eq 0 -o $? -eq 2",
+    "flow": "flow",
     "lint": "eslint *.js test/*.js bin/*.js",
     "prettier": "prettier --write '*.js' && prettier --write 'test/*.js' && prettier --write 'bin/*.js'",
     "karma": "yarn run build-test && karma start",
