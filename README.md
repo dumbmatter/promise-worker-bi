@@ -279,6 +279,8 @@ The `hostID` parameter is only meaningful when sending a message from a shared w
 
 #### `promiseWorker.registerError((error: Error) => void)`
 
+This should only be called in the browser, not in a worker.
+
 When an error in your web/shared worker process occurs that is *not* directly in response to a `promiseWorker.postMessage` call, it will be sent to the callback you provide here to `promiseWorker.registerError`.
 
 Although [normally stack traces are not sent from the worker to the main thread](https://github.com/mknichel/javascript-errors/blob/master/README.md#dedicated-workers), promise-worker-bi magically works around this problem so you will see a stack trace in `error`.
