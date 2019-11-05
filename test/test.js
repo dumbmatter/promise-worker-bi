@@ -451,7 +451,9 @@ describe("worker -> host", function() {
         return Promise.resolve().then(() => {
           throw new Error("oh noes");
         });
-      } else if (i === 1) {
+      }
+
+      if (i === 1) {
         i += 1;
         assert.equal(msg, "done");
         done();

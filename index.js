@@ -73,13 +73,21 @@ const logError = (err: Error) => {
 
 class PromiseWorker {
   _callbacks: Map<number, (Error | null, any) => void>;
+
   _errorCallback: ErrorCallback | void;
+
   _hostID: number | void; // Only defined on host
+
   _hostIDQueue: (() => void)[] | void; // Only defined on host
+
   _hosts: Map<number, { port: MessagePort }>; // Only defined on worker
+
   _maxHostID: number;
+
   _queryCallback: QueryCallback;
+
   _worker: SharedWorker | Worker | void;
+
   _workerType: "SharedWorker" | "Worker";
 
   constructor(worker?: SharedWorker | Worker) {

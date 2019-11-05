@@ -32,3 +32,4 @@ bundle-*js
 dist/test
 
 .zuulrc
+dist
