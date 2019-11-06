@@ -1,5 +1,5 @@
-const assert = require("assert");
-const { PWBHost } = require("../dist/commonjs");
+import assert from "assert";
+import { PWBHost } from "../dist/esmodules";
 
 const pathPrefix = "/base/dist/test/bundle/bundle-";
 

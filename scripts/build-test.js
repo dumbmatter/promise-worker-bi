@@ -6,8 +6,26 @@ const builtins = require("rollup-plugin-node-builtins");
 
 const files = glob.sync("test/worker*js");
 
-Promise.all(
-  files.map(async file => {
+Promise.all([
+  (async () => {
+    const bundle = await rollup.rollup({
+      input: "test/test.js",
+      plugins: [
+        resolve({
+          preferBuiltins: true
+        }),
+        builtins()
+      ]
+    });
+
+    await bundle.write({
+      file: `dist/test/test.js`,
+      format: "iife",
+      indent: false,
+      name: "test"
+    });
+  })(),
+  ...files.map(async file => {
     const bundle = await rollup.rollup({
       input: file,
       plugins: [
@@ -25,7 +43,7 @@ Promise.all(
       name: "test"
     });
   })
-).catch(err => {
+]).catch(err => {
   console.error(err);
   process.exit(1);
 });
