@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "prepublish": "yarn run build",
-    "build": "rimraf dist && mkdirp dist && babel index.js --out-file dist/index.js",
-    "build-test": "yarn run build && node bin/build-worker-bundles.js && babel test -d dist/test && browserify test/test.js -o dist/test/test.js -t babelify",
+    "build": "rimraf dist && mkdirp dist && flow-remove-types index.js -d dist",
+    "build-test": "yarn run build && node bin/build-worker-bundles.js && cp -r test dist/test && browserify test/test.js -o dist/test/test.js",
     "flow": "flow",
     "lint": "eslint *.js test/*.js bin/*.js",
     "prettier": "prettier --write '*.js' && prettier --write 'test/*.js' && prettier --write 'bin/*.js'",
@@ -32,17 +32,15 @@
   },
   "homepage": "https://github.com/dumbmatter/promise-worker-bi",
   "devDependencies": {
-    "babel-cli": "^6.24.0",
-    "babel-eslint": "^8.2.6",
-    "babel-plugin-transform-flow-strip-types": "^6.22.0",
-    "babel-preset-es2015": "^6.24.0",
-    "babelify": "^8.0.0",
+    "@babel/core": "^7.7.0",
+    "babel-eslint": "^10.0.3",
     "browserify": "^16.5.0",
     "eslint": "^6.6.0",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-prettier": "^6.5.0",
     "eslint-plugin-import": "^2.18.2",
     "flow-bin": "^0.111.1",
+    "flow-remove-types": "^2.111.3",
     "glob": "^7.1.5",
     "karma": "^4.4.1",
     "karma-chrome-launcher": "^3.1.0",
@@ -57,13 +55,5 @@
   },
   "files": [
     "dist"
-  ],
-  "babel": {
-    "presets": [
-      "es2015"
-    ],
-    "plugins": [
-      "transform-flow-strip-types"
-    ]
-  }
+  ]
 }
