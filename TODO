@@ -4,7 +4,5 @@ Fix tests
 Add tests for error when importing wrong class in host/worker
 Confirm tree shaking works in BBGM, including unused functions (not just exported class)
 Confirm old browsers work in BBGM
-for build command, just babel CLI is needed, like facesjs
-commonjs and esmodules builds
 Typescript
 changelog

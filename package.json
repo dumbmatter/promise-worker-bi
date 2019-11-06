@@ -6,8 +6,8 @@
   "module": "dist/esmodules.js",
   "scripts": {
     "prepublish": "yarn run build",
-    "build": "rimraf dist && mkdirp dist && rollup -c",
-    "build-test": "yarn run build && node bin/build-worker-bundles.js && cp -r test dist/test && browserify test/test.js -o dist/test/test.js",
+    "build": "rimraf dist && rollup -c",
+    "build-test": "yarn run build && node bin/build-worker-bundles.js && browserify test/test.js -o dist/test/test.js",
     "flow": "flow",
     "lint": "eslint *.js test/*.js bin/*.js",
     "prettier": "prettier --write '*.js' && prettier --write 'test/*.js' && prettier --write 'bin/*.js'",
@@ -52,7 +52,6 @@
     "karma-mocha": "^1.3.0",
     "karma-mocha-reporter": "^2.2.5",
     "lint-staged": ">=8",
-    "mkdirp": "^0.5.1",
     "mocha": "^6.2.2",
     "prettier": "^1.18.2",
     "rimraf": "^3.0.0",
