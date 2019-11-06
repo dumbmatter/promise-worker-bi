@@ -1,7 +1,4 @@
-build-test speed up
-Fix tests
-Add tests for error when importing wrong class in host/worker
 Confirm tree shaking works in BBGM, including unused functions (not just exported class)
 Confirm old browsers work in BBGM
-Typescript
+update README
 changelog

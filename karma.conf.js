@@ -3,7 +3,7 @@ module.exports = config => {
     frameworks: ["mocha"],
     files: [
       "dist/test/test.js",
-      { pattern: "dist/test/bundle/*.js", included: false }
+      { pattern: "dist/test/worker-*.js", included: false }
     ],
     reporters: ["mocha"],
     autoWatch: false,

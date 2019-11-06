@@ -1,7 +1,7 @@
 import assert from "assert";
 import { PWBHost } from "../dist/esmodules";
 
-const pathPrefix = "/base/dist/test/bundle/bundle-";
+const pathPrefix = "/base/dist/test/";
 
 // Only run in browser
 const testSharedWorker = typeof SharedWorker !== "undefined" ? it : it.skip;
