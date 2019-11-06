@@ -1,5 +1,5 @@
 const assert = require("assert");
-const { PWBHost } = require("../");
+const { PWBHost } = require("../dist/commonjs");
 
 const pathPrefix = "/base/dist/test/bundle/bundle-";
 

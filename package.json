@@ -2,7 +2,8 @@
   "name": "promise-worker-bi",
   "version": "3.0.2",
   "description": "Bidirectional communication with a Web Worker using Promises",
-  "main": "dist/index.js",
+  "main": "dist/commonjs.js",
+  "module": "dist/esmodules.js",
   "scripts": {
     "prepublish": "yarn run build",
     "build": "rimraf dist && mkdirp dist && rollup -c",
@@ -56,8 +57,8 @@
     "rollup": "^1.26.3",
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-node-resolve": "^5.2.0",
-    "stream-to-promise": "^1.1.1"
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-resolve": "^5.2.0"
   },
   "files": [
     "dist"

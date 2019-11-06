@@ -1,4 +1,4 @@
-const { PWBWorker } = require("..");
+import { PWBWorker } from "../dist/esmodules";
 
 // eslint-disable-next-line no-unused-vars
 const promiseWorker = new PWBWorker();

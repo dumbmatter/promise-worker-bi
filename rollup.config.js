@@ -2,11 +2,15 @@ const babel = require("rollup-plugin-babel");
 
 module.exports = {
   input: "index.js",
-  output: {
-    file: "dist/index.js",
-    format: "cjs"
-  },
-  plugins: [
-    babel(),
-  ]
+  output: [
+    {
+      file: "dist/commonjs.js",
+      format: "cjs"
+    },
+    {
+      file: "dist/esmodules.js",
+      format: "esm"
+    }
+  ],
+  plugins: [babel()]
 };

@@ -1,5 +1,5 @@
-const assert = require("assert");
-const { PWBWorker } = require("..");
+import assert from "assert";
+import { PWBWorker } from "../dist/esmodules";
 
 const promiseWorker = new PWBWorker();
 

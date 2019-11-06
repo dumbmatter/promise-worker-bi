@@ -1,4 +1,5 @@
-Switch test bundles to rollup
+get rid of browserify
+build-worker-bundles rollup input array
 prettier auto
 Fix tests
 Add tests for error when importing wrong class in host/worker

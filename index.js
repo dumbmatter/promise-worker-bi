@@ -463,7 +463,4 @@ class PWBWorker extends PWBBase {
   }
 }
 
-export {
-  PWBHost,
-  PWBWorker
-};
+export { PWBHost, PWBWorker };

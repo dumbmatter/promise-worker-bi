@@ -1,10 +1,12 @@
-const browserify = require("browserify");
-const fs = require("fs");
 const glob = require("glob");
 const mkdirp = require("mkdirp");
 const path = require("path");
 const rimraf = require("rimraf");
-const streamToPromise = require("stream-to-promise");
+const rollup = require("rollup");
+const babel = require("rollup-plugin-babel");
+const commonjs = require("rollup-plugin-commonjs");
+const resolve = require("rollup-plugin-node-resolve");
+const builtins = require("rollup-plugin-node-builtins");
 
 rimraf.sync("test/bundle");
 mkdirp.sync("test/bundle");
@@ -12,14 +14,27 @@ mkdirp.sync("test/bundle");
 const files = glob.sync("test/worker*js");
 
 Promise.all(
-  files.map(file => {
-    const b = browserify(file, { debug: true }).bundle();
-    return streamToPromise(b).then(buff => {
-      const outputFile = `test/bundle/bundle-${path.basename(file)}`;
-      fs.writeFileSync(outputFile, buff, "utf-8");
+  files.map(async file => {
+    const bundle = await rollup.rollup({
+      input: file,
+      plugins: [
+        babel(),
+        commonjs(),
+        resolve({
+          preferBuiltins: true
+        }),
+        builtins()
+      ]
+    });
+
+    await bundle.write({
+      file: `test/bundle/bundle-${path.basename(file)}`,
+      format: "iife",
+      indent: false,
+      name: "test"
     });
   })
 ).catch(err => {
   console.error(err);
-  process.exit(0);
+  process.exit(1);
 });
