@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "prepublish": "yarn run build",
-    "build": "rimraf dist && mkdirp dist && flow-remove-types index.js -d dist",
+    "build": "rimraf dist && mkdirp dist && rollup -c",
     "build-test": "yarn run build && node bin/build-worker-bundles.js && cp -r test dist/test && browserify test/test.js -o dist/test/test.js",
     "flow": "flow",
     "lint": "eslint *.js test/*.js bin/*.js",
@@ -33,6 +33,8 @@
   "homepage": "https://github.com/dumbmatter/promise-worker-bi",
   "devDependencies": {
     "@babel/core": "^7.7.0",
+    "@babel/plugin-transform-destructuring": "^7.6.0",
+    "@babel/preset-flow": "^7.0.0",
     "babel-eslint": "^10.0.3",
     "browserify": "^16.5.0",
     "eslint": "^6.6.0",
@@ -51,6 +53,10 @@
     "mocha": "^6.2.2",
     "prettier": "^1.18.2",
     "rimraf": "^3.0.0",
+    "rollup": "^1.26.3",
+    "rollup-plugin-babel": "^4.3.3",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
     "stream-to-promise": "^1.1.1"
   },
   "files": [

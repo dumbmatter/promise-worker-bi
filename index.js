@@ -463,7 +463,7 @@ class PWBWorker extends PWBBase {
   }
 }
 
-module.exports = {
+export {
   PWBHost,
   PWBWorker
 };
