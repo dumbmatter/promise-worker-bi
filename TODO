@@ -1,4 +1,0 @@
-Confirm tree shaking works in BBGM, including unused functions (not just exported class)
-Confirm old browsers work in BBGM
-update README
-changelog
