@@ -1,6 +1,6 @@
 # v4.0.0, 2019-11-06
 
-Split the old PromiseWorker class into two separate classes PWBHost and PWBWorker, so they can be included separately in main and worker bundles, leading to smaller bundle sizes. Savings seems to just be a couple kb per bundle, but every byte counts!
+Split the old PromiseWorker class into two separate classes PWBHost and PWBWorker, so they can be included separately in main and worker bundles, leading to smaller bundle sizes if you use tree shaking and dead code elimination. Savings seems to just be a couple kb of minified JS per bundle, but every byte counts!
 
 # v3.0.2, 2018-07-06
 
