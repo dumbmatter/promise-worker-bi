@@ -1,6 +1,6 @@
 {
   "name": "promise-worker-bi",
-  "version": "3.0.2",
+  "version": "4.0.0",
   "description": "Promise-based messaging for Web Workers and Shared Workers",
   "main": "dist/commonjs.js",
   "module": "dist/esmodules.js",
