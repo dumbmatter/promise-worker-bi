@@ -1,8 +1,6 @@
 const glob = require("glob");
 const path = require("path");
 const rollup = require("rollup");
-const babel = require("rollup-plugin-babel");
-const commonjs = require("rollup-plugin-commonjs");
 const resolve = require("rollup-plugin-node-resolve");
 const builtins = require("rollup-plugin-node-builtins");
 
@@ -13,8 +11,6 @@ Promise.all(
     const bundle = await rollup.rollup({
       input: file,
       plugins: [
-        babel(),
-        commonjs(),
         resolve({
           preferBuiltins: true
         }),
