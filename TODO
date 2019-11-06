@@ -1,5 +1,5 @@
 get rid of browserify
-build-worker-bundles rollup input array
+build-worker-bundles speed up
 Fix tests
 Add tests for error when importing wrong class in host/worker
 Confirm tree shaking works in BBGM, including unused functions (not just exported class)

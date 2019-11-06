@@ -6,7 +6,7 @@
   "module": "dist/esmodules.js",
   "scripts": {
     "prepublish": "yarn run build",
-    "build": "rimraf dist && rollup -c",
+    "build": "rm -rf dist && rollup -c",
     "build-test": "yarn run build && node bin/build-worker-bundles.js && browserify test/test.js -o dist/test/test.js",
     "flow": "flow",
     "lint": "eslint *.js test/*.js bin/*.js",
@@ -54,7 +54,6 @@
     "lint-staged": ">=8",
     "mocha": "^6.2.2",
     "prettier": "^1.18.2",
-    "rimraf": "^3.0.0",
     "rollup": "^1.26.3",
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-node-builtins": "^2.1.2",
