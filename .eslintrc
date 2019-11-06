@@ -7,7 +7,9 @@
   },
   "rules": {
     "arrow-body-style": "off",
+    "consistent-return": "off",
     "func-names": "off",
+    "max-classes-per-file": "off",
     "no-restricted-globals": "off",
     "no-underscore-dangle": "off"
   },

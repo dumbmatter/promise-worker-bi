@@ -57,7 +57,7 @@ const toFakeError = (error: Error): FakeError => {
   return fakeError;
 };
 
-// any rather than FakeError for convenience
+// Object rather than FakeError for convenience
 const fromFakeError = (fakeError: Object): Error => {
   const error = new Error();
   return Object.assign(error, fakeError);
@@ -66,129 +66,24 @@ const fromFakeError = (fakeError: Object): Error => {
 const logError = (err: Error) => {
   // Logging in the console makes debugging in the worker easier
   /* eslint-disable no-console */
-  console.error('Error in Worker:');
+  console.error("Error in Worker:");
   console.error(err); // Safari needs it on new line
   /* eslint-enable no-console */
 };
 
-class PromiseWorker {
+class PWBBase {
   _callbacks: Map<number, (Error | null, any) => void>;
-
-  _errorCallback: ErrorCallback | void;
-
-  _hostID: number | void; // Only defined on host
-
-  _hostIDQueue: (() => void)[] | void; // Only defined on host
-
-  _hosts: Map<number, { port: MessagePort }>; // Only defined on worker
-
-  _maxHostID: number;
 
   _queryCallback: QueryCallback;
 
-  _worker: SharedWorker | Worker | void;
-
   _workerType: "SharedWorker" | "Worker";
 
-  constructor(worker?: SharedWorker | Worker) {
+  constructor() {
     // console.log('constructor', worker);
     this._callbacks = new Map();
 
     // $FlowFixMe https://github.com/facebook/flow/issues/1517
     this._onMessage = this._onMessage.bind(this);
-
-    if (worker === undefined) {
-      if (
-        typeof SharedWorkerGlobalScope !== "undefined" &&
-        self instanceof SharedWorkerGlobalScope
-      ) {
-        this._workerType = "SharedWorker";
-
-        this._hosts = new Map();
-        this._maxHostID = -1;
-
-        self.addEventListener("connect", e => {
-          const port = e.ports[0];
-          port.addEventListener("message", (e2: MessageEvent) =>
-            this._onMessage(e2)
-          ); // eslint-disable-line no-undef
-          port.start();
-
-          this._maxHostID += 1;
-          const hostID = this._maxHostID;
-          this._hosts.set(hostID, { port });
-
-          // Send back hostID to this host, otherwise it has no way to know it
-          this._postMessageBi([MSGTYPE_HOST_ID, -1, hostID], hostID);
-        });
-
-        self.addEventListener("error", (e: any) => {
-          logError(e.error);
-
-          // Just send to first host, so as to not duplicate error tracking
-          const hostID = this._hosts.keys().next().value;
-
-          if (hostID !== undefined) {
-            this._postMessageBi(
-              [MSGTYPE_WORKER_ERROR, -1, toFakeError(e.error)],
-              hostID
-            );
-          }
-        });
-      } else {
-        this._workerType = "Worker";
-
-        self.addEventListener("message", this._onMessage);
-
-        // Since this is not a Shared Worker, hostID is always 0 so it's not strictly required to
-        // send this back, but it makes the API a bit more consistent if there is the same
-        // initialization handshake in both cases.
-        this._postMessageBi([MSGTYPE_HOST_ID, -1, 0], 0);
-
-        self.addEventListener("error", (e: any) => {
-          logError(e.error);
-
-          this._postMessageBi([MSGTYPE_WORKER_ERROR, -1, toFakeError(e.error)]);
-        });
-      }
-    } else {
-      // The following if statement used to check `worker instanceof Worker` but I have recieved
-      // reports that in some weird cases, Safari will inappropriately return false for that, even
-      // in obvious cases like:
-      //
-      //     blob = new Blob(["self.onmessage = function() {};"], { type: "text/javascript" });
-      //     worker = new Worker(window.URL.createObjectURL(blob));
-      //     console.log(worker instanceof Worker);
-      //
-      // So instead, let's do this test for worker.port which only exists on shared workers.
-      if (worker.port === undefined) {
-        this._workerType = "Worker";
-
-        // $FlowFixMe Seems to not recognize 'message' as valid type, but it is
-        worker.addEventListener("message", this._onMessage);
-      } else {
-        this._workerType = "SharedWorker";
-
-        // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
-        worker.port.addEventListener("message", this._onMessage);
-        // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
-        worker.port.start();
-
-        // Handle tab close. This isn't perfect, but there is no perfect method
-        // http://stackoverflow.com/q/13662089/786644 and this should work like
-        // 99% of the time. It is a memory leak if it fails, but for most use
-        // cases, it shouldn't be noticeable.
-        window.addEventListener("beforeunload", () => {
-          // Prevent firing if we don't know hostID yet
-          if (this._hostID !== undefined) {
-            this._postMessageBi([MSGTYPE_HOST_CLOSE, -1, this._hostID]);
-          }
-        });
-      }
-
-      this._worker = worker;
-      this._hostIDQueue = [];
-    }
   }
 
   register(cb: QueryCallback) {
@@ -196,80 +91,9 @@ class PromiseWorker {
     this._queryCallback = cb;
   }
 
-  registerError(cb: ErrorCallback) {
-    // console.log('registerError', cb);
-    if (!this._worker) {
-      throw new Error(
-        "registerError can only be called from host, not inside Worker"
-      );
-    }
-
-    this._errorCallback = cb;
-
-    // Some browsers (Firefox) call onerror on every host, while others
-    // (Chrome) do nothing. Let's disable that everywhere, for consistency.
-    this._worker.addEventListener("error", (e: Event) => {
-      e.preventDefault();
-      e.stopPropagation();
-    });
-  }
-
-  _postMessageBi(obj: any[], targetHostID: number | void) {
-    // console.log('_postMessageBi', obj, targetHostID);
-    if (!this._worker && this._workerType === "SharedWorker") {
-      // If targetHostID has been deleted, this will do nothing, which is fine I think
-      this._hosts.forEach(({ port }, hostID) => {
-        if (targetHostID === undefined || targetHostID === hostID) {
-          port.postMessage(obj);
-        }
-      });
-    } else if (!this._worker && this._workerType === "Worker") {
-      self.postMessage(obj);
-    } else if (this._workerType === "Worker") {
-      // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
-      this._worker.postMessage(obj);
-    } else if (this._workerType === "SharedWorker") {
-      // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
-      this._worker.port.postMessage(obj);
-    } else {
-      throw new Error("WTF");
-    }
-  }
-
-  postMessage(userMessage: any, targetHostID: number | void): Promise<any> {
-    // console.log('postMessage', userMessage, targetHostID);
-    const actuallyPostMessage = (resolve, reject) => {
-      const messageID = messageIDs;
-      messageIDs += 1;
-
-      const messageToSend = [
-        MSGTYPE_QUERY,
-        messageID,
-        userMessage,
-        this._hostID
-      ];
-
-      this._callbacks.set(messageID, (error: Error | null, result: any) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(result);
-        }
-      });
-      this._postMessageBi(messageToSend, targetHostID);
-    };
-
-    return new Promise((resolve, reject) => {
-      // Outside of worker, don't send a message until hostID is known, otherwise it's a race
-      // condition and sometimes hostID will be undefined.
-      if (this._hostIDQueue !== undefined && this._hostID === undefined) {
-        this._hostIDQueue.push(() => {
-          actuallyPostMessage(resolve, reject);
-        });
-      } else {
-        actuallyPostMessage(resolve, reject);
-      }
-    });
+  // eslint-disable-next-line
+  _postMessage(obj: any[], targetHostID?: number | void) {
+    throw new Error("Not implemented");
   }
 
   _postResponse(
@@ -282,12 +106,12 @@ class PromiseWorker {
     if (error) {
       logError(error);
 
-      this._postMessageBi(
+      this._postMessage(
         [MSGTYPE_RESPONSE, messageID, toFakeError(error)],
         hostID
       );
     } else {
-      this._postMessageBi([MSGTYPE_RESPONSE, messageID, null, result], hostID);
+      this._postMessage([MSGTYPE_RESPONSE, messageID, null, result], hostID);
     }
   }
 
@@ -313,7 +137,8 @@ class PromiseWorker {
     }
   }
 
-  _onMessage(e: MessageEvent) {
+  // Either return messageID and type if further processing is needed, or undefined otherwise
+  _onMessageCommon(e: MessageEvent): { message: any, type: number } | void {
     // eslint-disable-line no-undef
     // console.log('_onMessage', e.data);
     const message = e.data;
@@ -321,7 +146,7 @@ class PromiseWorker {
       return; // Ignore - this message is not for us
     }
 
-    if (MSGTYPES.indexOf(message[0]) < 0) {
+    if (typeof message[0] !== "number" || MSGTYPES.indexOf(message[0]) < 0) {
       throw new Error("Invalid messageID");
     }
     const type = message[0];
@@ -339,7 +164,9 @@ class PromiseWorker {
       const hostID: number | void = message[3];
 
       this._handleQuery(messageID, query, hostID);
-    } else if (type === MSGTYPE_RESPONSE) {
+      return;
+    }
+    if (type === MSGTYPE_RESPONSE) {
       if (message[2] !== null && typeof message[2] !== "object") {
         throw new Error("Invalid error");
       }
@@ -357,11 +184,133 @@ class PromiseWorker {
 
       this._callbacks.delete(messageID);
       callback(error, result);
-    } else if (type === MSGTYPE_HOST_ID) {
-      if (this._worker === undefined) {
-        throw new Error("MSGTYPE_HOST_ID can only be sent to a host");
-      }
+      return;
+    }
 
+    return { message, type };
+  }
+}
+
+class PWBHost extends PWBBase {
+  _errorCallback: ErrorCallback | void;
+
+  _hostID: number | void; // Only defined on host
+
+  _hostIDQueue: (() => void)[] | void;
+
+  _worker: SharedWorker | Worker;
+
+  constructor(worker: SharedWorker | Worker) {
+    super();
+
+    // The following if statement used to check `worker instanceof Worker` but I have recieved
+    // reports that in some weird cases, Safari will inappropriately return false for that, even
+    // in obvious cases like:
+    //
+    //     blob = new Blob(["self.onmessage = function() {};"], { type: "text/javascript" });
+    //     worker = new Worker(window.URL.createObjectURL(blob));
+    //     console.log(worker instanceof Worker);
+    //
+    // So instead, let's do this test for worker.port which only exists on shared workers.
+    if (worker.port === undefined) {
+      this._workerType = "Worker";
+
+      // $FlowFixMe Seems to not recognize 'message' as valid type, but it is
+      worker.addEventListener("message", this._onMessage);
+    } else {
+      this._workerType = "SharedWorker";
+
+      // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
+      worker.port.addEventListener("message", this._onMessage);
+      // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
+      worker.port.start();
+
+      // Handle tab close. This isn't perfect, but there is no perfect method
+      // http://stackoverflow.com/q/13662089/786644 and this should work like
+      // 99% of the time. It is a memory leak if it fails, but for most use
+      // cases, it shouldn't be noticeable.
+      window.addEventListener("beforeunload", () => {
+        // Prevent firing if we don't know hostID yet
+        if (this._hostID !== undefined) {
+          this._postMessage([MSGTYPE_HOST_CLOSE, -1, this._hostID]);
+        }
+      });
+    }
+
+    this._worker = worker;
+    this._hostIDQueue = [];
+  }
+
+  registerError(cb: ErrorCallback) {
+    // console.log('registerError', cb);
+    this._errorCallback = cb;
+
+    // Some browsers (Firefox) call onerror on every host, while others
+    // (Chrome) do nothing. Let's disable that everywhere, for consistency.
+    this._worker.addEventListener("error", (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  }
+
+  _postMessage(obj: any[]) {
+    // console.log('_postMessage', obj);
+    if (this._workerType === "Worker") {
+      // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
+      this._worker.postMessage(obj);
+    } else if (this._workerType === "SharedWorker") {
+      // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
+      this._worker.port.postMessage(obj);
+    } else {
+      throw new Error("WTF");
+    }
+  }
+
+  postMessage(userMessage: any): Promise<any> {
+    // console.log('postMessage', userMessage, targetHostID);
+    const actuallyPostMessage = (resolve, reject) => {
+      const messageID = messageIDs;
+      messageIDs += 1;
+
+      const messageToSend = [
+        MSGTYPE_QUERY,
+        messageID,
+        userMessage,
+        this._hostID
+      ];
+
+      this._callbacks.set(messageID, (error: Error | null, result: any) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      });
+      this._postMessage(messageToSend);
+    };
+
+    return new Promise((resolve, reject) => {
+      // Don't send a message until hostID is known, otherwise it's a race
+      // condition and sometimes hostID will be undefined.
+      if (this._hostIDQueue !== undefined) {
+        this._hostIDQueue.push(() => {
+          actuallyPostMessage(resolve, reject);
+        });
+      } else {
+        actuallyPostMessage(resolve, reject);
+      }
+    });
+  }
+
+  _onMessage(e: MessageEvent) {
+    const common = this._onMessageCommon(e);
+    if (common === undefined) {
+      return;
+    }
+
+    const { message, type } = common;
+
+    if (type === MSGTYPE_HOST_ID) {
       if (message[2] !== undefined && typeof message[2] !== "number") {
         throw new Error("Invalid hostID");
       }
@@ -378,22 +327,7 @@ class PromiseWorker {
         });
         this._hostIDQueue = undefined; // Never needed again after initial setup
       }
-    } else if (type === MSGTYPE_HOST_CLOSE) {
-      if (this._worker !== undefined) {
-        throw new Error("MSGTYPE_HOST_CLOSE can only be sent to a worker");
-      }
-
-      if (typeof message[2] !== "number") {
-        throw new Error("Invalid hostID");
-      }
-      const hostID: number = message[2];
-
-      this._hosts.delete(hostID);
     } else if (type === MSGTYPE_WORKER_ERROR) {
-      if (this._worker === undefined) {
-        throw new Error("MSGTYPE_WORKER_ERROR can only be sent to a host");
-      }
-
       if (
         message[2] !== undefined &&
         message[2] !== null &&
@@ -408,4 +342,128 @@ class PromiseWorker {
   }
 }
 
-module.exports = PromiseWorker;
+class PWBWorker extends PWBBase {
+  _hosts: Map<number, { port: MessagePort }>;
+
+  _maxHostID: number;
+
+  constructor() {
+    super();
+
+    if (
+      typeof SharedWorkerGlobalScope !== "undefined" &&
+      self instanceof SharedWorkerGlobalScope
+    ) {
+      this._workerType = "SharedWorker";
+
+      this._hosts = new Map();
+      this._maxHostID = -1;
+
+      self.addEventListener("connect", e => {
+        const port = e.ports[0];
+        port.addEventListener("message", (e2: MessageEvent) =>
+          this._onMessage(e2)
+        ); // eslint-disable-line no-undef
+        port.start();
+
+        this._maxHostID += 1;
+        const hostID = this._maxHostID;
+        this._hosts.set(hostID, { port });
+
+        // Send back hostID to this host, otherwise it has no way to know it
+        this._postMessage([MSGTYPE_HOST_ID, -1, hostID], hostID);
+      });
+
+      self.addEventListener("error", (e: any) => {
+        logError(e.error);
+
+        // Just send to first host, so as to not duplicate error tracking
+        const hostID = this._hosts.keys().next().value;
+
+        if (hostID !== undefined) {
+          this._postMessage(
+            [MSGTYPE_WORKER_ERROR, -1, toFakeError(e.error)],
+            hostID
+          );
+        }
+      });
+    } else {
+      this._workerType = "Worker";
+
+      self.addEventListener("message", this._onMessage);
+
+      // Since this is not a Shared Worker, hostID is always 0 so it's not strictly required to
+      // send this back, but it makes the API a bit more consistent if there is the same
+      // initialization handshake in both cases.
+      this._postMessage([MSGTYPE_HOST_ID, -1, 0], 0);
+
+      self.addEventListener("error", (e: any) => {
+        logError(e.error);
+
+        this._postMessage([MSGTYPE_WORKER_ERROR, -1, toFakeError(e.error)]);
+      });
+    }
+  }
+
+  _postMessage(obj: any[], targetHostID: number | void) {
+    // console.log('_postMessage', obj, targetHostID);
+    if (this._workerType === "SharedWorker") {
+      // If targetHostID has been deleted, this will do nothing, which is fine I think
+      this._hosts.forEach(({ port }, hostID) => {
+        if (targetHostID === undefined || targetHostID === hostID) {
+          port.postMessage(obj);
+        }
+      });
+    } else if (this._workerType === "Worker") {
+      self.postMessage(obj);
+    } else {
+      throw new Error("WTF");
+    }
+  }
+
+  postMessage(userMessage: any, targetHostID: number | void): Promise<any> {
+    // console.log('postMessage', userMessage, targetHostID);
+    const actuallyPostMessage = (resolve, reject) => {
+      const messageID = messageIDs;
+      messageIDs += 1;
+
+      const messageToSend = [MSGTYPE_QUERY, messageID, userMessage];
+
+      this._callbacks.set(messageID, (error: Error | null, result: any) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      });
+      this._postMessage(messageToSend, targetHostID);
+    };
+
+    return new Promise((resolve, reject) => {
+      actuallyPostMessage(resolve, reject);
+    });
+  }
+
+  _onMessage(e: MessageEvent) {
+    const common = this._onMessageCommon(e);
+    if (common === undefined) {
+      return;
+    }
+
+    const { message, type } = common;
+
+    if (type === MSGTYPE_HOST_CLOSE) {
+      if (typeof message[2] !== "number") {
+        throw new Error("Invalid hostID");
+      }
+      const hostID: number = message[2];
+
+      this._hosts.delete(hostID);
+    }
+  }
+}
+
+module.exports = {
+  PWBHost,
+  PWBWorker
+};

@@ -1,8 +1,7 @@
 const assert = require("assert");
-const path = require("path");
-const PromiseWorker = require("../");
+const { PWBHost } = require("../");
 
-const pathPrefix = path.join(__dirname, "bundle/bundle-");
+const pathPrefix = "/base/dist/test/bundle/bundle-";
 
 // Only run in browser
 const testSharedWorker = typeof SharedWorker !== "undefined" ? it : it.skip;
@@ -12,7 +11,7 @@ describe("host -> worker", function() {
 
   it("sends a message back and forth", () => {
     const worker = new Worker(`${pathPrefix}worker-pong.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     return promiseWorker.postMessage("ping").then(res => {
       assert.equal(res, "pong");
@@ -21,7 +20,7 @@ describe("host -> worker", function() {
 
   it("echoes a message", () => {
     const worker = new Worker(`${pathPrefix}worker-echo.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     return promiseWorker.postMessage("ping").then(res => {
       assert.equal(res, "ping");
@@ -30,7 +29,7 @@ describe("host -> worker", function() {
 
   it("pongs a message with a promise", () => {
     const worker = new Worker(`${pathPrefix}worker-pong-promise.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     return promiseWorker.postMessage("ping").then(res => {
       assert.equal(res, "pong");
@@ -39,7 +38,7 @@ describe("host -> worker", function() {
 
   it("pongs a message with a promise, again", () => {
     const worker = new Worker(`${pathPrefix}worker-pong-promise.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     return promiseWorker.postMessage("ping").then(res => {
       assert.equal(res, "pong");
@@ -48,7 +47,7 @@ describe("host -> worker", function() {
 
   it("echoes a message multiple times", () => {
     const worker = new Worker(`${pathPrefix}worker-echo.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     const words = [
       "foo",
@@ -77,8 +76,8 @@ describe("host -> worker", function() {
 
   it("can have multiple PromiseWorkers", () => {
     const worker = new Worker(`${pathPrefix}worker-echo.js`);
-    const promiseWorker1 = new PromiseWorker(worker);
-    const promiseWorker2 = new PromiseWorker(worker);
+    const promiseWorker1 = new PWBHost(worker);
+    const promiseWorker2 = new PWBHost(worker);
 
     return promiseWorker1
       .postMessage("foo")
@@ -96,11 +95,11 @@ describe("host -> worker", function() {
   it("can have multiple PromiseWorkers 2", () => {
     const worker = new Worker(`${pathPrefix}worker-echo.js`);
     const promiseWorkers = [
-      new PromiseWorker(worker),
-      new PromiseWorker(worker),
-      new PromiseWorker(worker),
-      new PromiseWorker(worker),
-      new PromiseWorker(worker)
+      new PWBHost(worker),
+      new PWBHost(worker),
+      new PWBHost(worker),
+      new PWBHost(worker),
+      new PWBHost(worker)
     ];
 
     return Promise.all(
@@ -122,7 +121,7 @@ describe("host -> worker", function() {
 
   it("handles synchronous errors", () => {
     const worker = new Worker(`${pathPrefix}worker-error-sync.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     return promiseWorker.postMessage("foo").then(
       () => {
@@ -142,7 +141,7 @@ describe("host -> worker", function() {
 
   it("handles asynchronous errors", () => {
     const worker = new Worker(`${pathPrefix}worker-error-async.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     return promiseWorker.postMessage("foo").then(
       () => {
@@ -160,7 +159,7 @@ describe("host -> worker", function() {
 
   it("handles unregistered callbacks", () => {
     const worker = new Worker(`${pathPrefix}worker-empty.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     return promiseWorker.postMessage("ping").then(
       () => {
@@ -174,7 +173,7 @@ describe("host -> worker", function() {
 
   it("allows custom additional behavior", () => {
     const worker = new Worker(`${pathPrefix}worker-echo-custom.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
     return Promise.all([
       promiseWorker.postMessage("ping"),
       new Promise((resolve, reject) => {
@@ -206,7 +205,7 @@ describe("host -> worker", function() {
 
   it("allows custom additional behavior 2", () => {
     const worker = new Worker(`${pathPrefix}worker-echo-custom-2.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
     return Promise.all([
       promiseWorker.postMessage("ping"),
       new Promise((resolve, reject) => {
@@ -238,7 +237,7 @@ describe("host -> worker", function() {
 
   it("makes hostID immediately available", () => {
     const worker = new Worker(`${pathPrefix}worker-hostid.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     return promiseWorker
       .postMessage("ping")
@@ -266,7 +265,7 @@ describe("worker -> host", function() {
 
   it("sends a message from worker to host", done => {
     const worker = new Worker(`${pathPrefix}worker-host-ping.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     let i = 0;
     promiseWorker.register(msg => {
@@ -286,7 +285,7 @@ describe("worker -> host", function() {
 
   it("echoes a message", done => {
     const worker = new Worker(`${pathPrefix}worker-host-echo.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     let i = 0;
     promiseWorker.register(msg => {
@@ -306,7 +305,7 @@ describe("worker -> host", function() {
 
   it("pongs a message with a promise", done => {
     const worker = new Worker(`${pathPrefix}worker-host-ping.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     let i = 0;
     promiseWorker.register(msg => {
@@ -326,7 +325,7 @@ describe("worker -> host", function() {
 
   it("pongs a message with a promise, again", done => {
     const worker = new Worker(`${pathPrefix}worker-host-ping.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     let i = 0;
     promiseWorker.register(msg => {
@@ -346,7 +345,7 @@ describe("worker -> host", function() {
 
   it("echoes a message multiple times", done => {
     const worker = new Worker(`${pathPrefix}worker-host-echo-multiple.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     const words = [
       "foo",
@@ -379,8 +378,8 @@ describe("worker -> host", function() {
 
   it("can have multiple PromiseWorkers", done => {
     const worker = new Worker(`${pathPrefix}worker-host-echo.js`);
-    const promiseWorker1 = new PromiseWorker(worker);
-    const promiseWorker2 = new PromiseWorker(worker);
+    const promiseWorker1 = new PWBHost(worker);
+    const promiseWorker2 = new PWBHost(worker);
 
     let i = 0;
     let j = 0;
@@ -422,7 +421,7 @@ describe("worker -> host", function() {
 
   it("handles synchronous errors", done => {
     const worker = new Worker(`${pathPrefix}worker-host-error-sync.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     let i = 0;
     promiseWorker.register(msg => {
@@ -441,7 +440,7 @@ describe("worker -> host", function() {
 
   it("handles asynchronous errors", done => {
     const worker = new Worker(`${pathPrefix}worker-host-error-async.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     let i = 0;
     // eslint-disable-next-line consistent-return
@@ -467,7 +466,7 @@ describe("worker -> host", function() {
     const worker = new Worker(
       `${pathPrefix}worker-host-error-outside-response.js`
     );
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     promiseWorker.registerError(e => {
       assert(e.message.indexOf("error-outside-response") >= 0);
@@ -479,7 +478,7 @@ describe("worker -> host", function() {
   // This test is a little dicey, relies on setTimeout timing across host and worker
   it("handles unregistered callbacks", done => {
     const worker = new Worker(`${pathPrefix}worker-host-empty.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     promiseWorker.register("mistake!");
 
@@ -493,7 +492,7 @@ describe("worker -> host", function() {
 
   it("allows custom additional behavior", done => {
     const worker = new Worker(`${pathPrefix}worker-host-echo-custom.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     let i = 0;
     promiseWorker.register(msg => {
@@ -524,7 +523,7 @@ describe("bidirectional communication", function() {
 
   it("echoes a message", done => {
     const worker = new Worker(`${pathPrefix}worker-bidirectional-echo.js`);
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     let i = 0;
     promiseWorker.register(msg => {
@@ -554,7 +553,7 @@ describe("Shared Worker", function() {
   testSharedWorker("works", done => {
     const worker = new SharedWorker(`${pathPrefix}worker-shared.js`);
 
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     let i = 0;
     const NUM_MESSAGES = 4; // 2 from broadcast, 1 from non-broadcast, and 2 from individual message responses
@@ -590,7 +589,7 @@ describe("Shared Worker", function() {
     const worker = new SharedWorker(
       `${pathPrefix}worker-host-error-outside-response.js`
     );
-    const promiseWorker = new PromiseWorker(worker);
+    const promiseWorker = new PWBHost(worker);
 
     promiseWorker.registerError(e => {
       assert(e.message.indexOf("error-outside-response") >= 0);

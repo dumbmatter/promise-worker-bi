@@ -1,6 +1,6 @@
-const PromiseWorker = require("..");
+const { PWBWorker } = require("..");
 
-const promiseWorker = new PromiseWorker();
+const promiseWorker = new PWBWorker();
 
 promiseWorker.register((msg, hostID) => {
   return hostID;

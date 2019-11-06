@@ -1,7 +1,7 @@
 const assert = require("assert");
-const PromiseWorker = require("..");
+const { PWBWorker } = require("..");
 
-const promiseWorker = new PromiseWorker();
+const promiseWorker = new PWBWorker();
 promiseWorker.postMessage("ping").then(msg => {
   assert.equal(msg, "ping");
 
