@@ -1,8 +1,9 @@
 const glob = require("glob");
 const path = require("path");
 const rollup = require("rollup");
-const resolve = require("rollup-plugin-node-resolve");
 const builtins = require("rollup-plugin-node-builtins");
+const globals = require("rollup-plugin-node-globals");
+const resolve = require("rollup-plugin-node-resolve");
 
 const files = glob.sync("test/*.js");
 
@@ -14,6 +15,7 @@ Promise.all(
         resolve({
           preferBuiltins: true
         }),
+        globals(),
         builtins()
       ]
     });
