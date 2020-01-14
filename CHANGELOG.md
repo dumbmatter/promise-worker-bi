@@ -1,3 +1,7 @@
+# v4.0.1, 2020-01-13
+
+Switched from Flow to TypeScript, cause momentum. Sadly TypeScript sucks at supporting shared workers, so the typings are a bit worse, but promise-worker-bi works the same.
+
 # v4.0.0, 2019-11-06
 
 Split the old PromiseWorker class into two separate classes PWBHost and PWBWorker, so they can be included separately in main and worker bundles, leading to smaller bundle sizes if you use tree shaking and dead code elimination. Savings seems to just be a couple kb of minified JS per bundle, but every byte counts!

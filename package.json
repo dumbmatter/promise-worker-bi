@@ -4,15 +4,15 @@
   "description": "Promise-based messaging for Web Workers and Shared Workers",
   "main": "dist/commonjs.js",
   "module": "dist/esmodules.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "prepublish": "yarn run build",
-    "build": "rm -rf dist && rollup -c",
+    "build": "rm -rf dist && rollup -c && yarn run tsc",
     "build-test": "yarn run build && node scripts/build-test.js",
-    "flow": "flow",
-    "lint": "eslint *.js test/*.js scripts/*.js",
-    "prettier": "prettier --write '*.js' && prettier --write 'test/*.js' && prettier --write 'scripts/*.js'",
+    "lint": "eslint src/*.ts test/*.js scripts/*.js",
+    "prettier": "prettier --write 'src/*.ts' && prettier --write 'test/*.js' && prettier --write 'scripts/*.js'",
     "karma": "yarn run build-test && karma start",
-    "test": "yarn run flow && yarn run lint && yarn run karma"
+    "test": "yarn run tsc && yarn run lint && yarn run karma"
   },
   "repository": {
     "type": "git",
@@ -35,13 +35,13 @@
   "devDependencies": {
     "@babel/core": "^7.8.3",
     "@babel/plugin-transform-destructuring": "^7.8.3",
-    "@babel/preset-flow": "^7.8.3",
+    "@babel/preset-typescript": "^7.8.3",
+    "@types/sharedworker": "^0.0.29",
     "babel-eslint": "^10.0.3",
     "eslint": "^6.8.0",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-config-prettier": "^6.9.0",
     "eslint-plugin-import": "^2.20.0",
-    "flow-bin": "^0.115.0",
     "glob": "^7.1.6",
     "husky": "^4.0.7",
     "karma": "^4.4.1",
@@ -56,7 +56,8 @@
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-globals": "^1.4.0",
-    "rollup-plugin-node-resolve": "^5.2.0"
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "typescript": "^3.7.4"
   },
   "files": [
     "dist"

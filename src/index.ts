@@ -1,15 +1,13 @@
-// @flow
-
-type ErrorCallback = Error => void;
-type QueryCallback = (any[], number | void) => any;
+type ErrorCallback = (a: Error) => void;
+type QueryCallback = (a: any[], b: number | undefined) => any;
 
 type FakeError = {
-  name: string,
-  message: string,
-  stack?: string,
-  fileName?: string,
-  columnNumber?: number,
-  lineNumber?: number
+  name: string;
+  message: string;
+  stack?: string;
+  fileName?: string;
+  columnNumber?: number;
+  lineNumber?: number;
 };
 
 let messageIDs = 0;
@@ -28,7 +26,7 @@ const MSGTYPES = [
 ];
 
 // Inlined from https://github.com/then/is-promise
-const isPromise = obj =>
+const isPromise = (obj: any) =>
   !!obj &&
   (typeof obj === "object" || typeof obj === "function") &&
   typeof obj.then === "function";
@@ -44,13 +42,19 @@ const toFakeError = (error: Error): FakeError => {
   }
 
   // These are non-standard properties, I think only in some versions of Firefox
+  // @ts-ignore
   if (typeof error.fileName === "string") {
+    // @ts-ignore
     fakeError.fileName = error.fileName;
   }
+  // @ts-ignore
   if (typeof error.columnNumber === "number") {
+    // @ts-ignore
     fakeError.columnNumber = error.columnNumber;
   }
+  // @ts-ignore
   if (typeof error.lineNumber === "number") {
+    // @ts-ignore
     fakeError.lineNumber = error.lineNumber;
   }
 
@@ -72,17 +76,18 @@ const logError = (err: Error) => {
 };
 
 class PWBBase {
-  _callbacks: Map<number, (Error | null, any) => void>;
+  _callbacks: Map<number, (a: Error | null, b: any) => void>;
 
   _queryCallback: QueryCallback;
 
-  _workerType: "SharedWorker" | "Worker";
+  _workerType: "SharedWorker" | "Worker" | undefined;
 
   constructor() {
     // console.log('constructor', worker);
     this._callbacks = new Map();
+    this._queryCallback = () => {};
 
-    // $FlowFixMe https://github.com/facebook/flow/issues/1517
+    // @ts-ignore
     this._onMessage = this._onMessage.bind(this);
   }
 
@@ -92,15 +97,15 @@ class PWBBase {
   }
 
   // eslint-disable-next-line
-  _postMessage(obj: any[], targetHostID?: number | void) {
+  _postMessage(obj: any[], targetHostID?: number | undefined) {
     throw new Error("Not implemented");
   }
 
   _postResponse(
     messageID: number,
     error: Error | null,
-    result: any,
-    hostID: number | void
+    result?: any,
+    hostID?: number | undefined
   ) {
     // console.log('_postResponse', messageID, error, result);
     if (error) {
@@ -115,7 +120,7 @@ class PWBBase {
     }
   }
 
-  _handleQuery(messageID: number, query: any, hostID: number | void) {
+  _handleQuery(messageID: number, query: any, hostID: number | undefined) {
     // console.log('_handleQuery', messageID, query);
     try {
       const result = this._queryCallback(query, hostID);
@@ -124,10 +129,10 @@ class PWBBase {
         this._postResponse(messageID, null, result, hostID);
       } else {
         result.then(
-          finalResult => {
+          (finalResult: any) => {
             this._postResponse(messageID, null, finalResult, hostID);
           },
-          finalError => {
+          (finalError: any) => {
             this._postResponse(messageID, finalError, hostID);
           }
         );
@@ -138,7 +143,7 @@ class PWBBase {
   }
 
   // Either return messageID and type if further processing is needed, or undefined otherwise
-  _onMessageCommon(e: MessageEvent): { message: any, type: number } | void {
+  _onMessageCommon(e: MessageEvent): { message: any; type: number } | void {
     // eslint-disable-line no-undef
     // console.log('_onMessage', e.data);
     const message = e.data;
@@ -161,7 +166,7 @@ class PWBBase {
       if (typeof message[3] !== "number" && message[3] !== undefined) {
         throw new Error("Invalid hostID");
       }
-      const hostID: number | void = message[3];
+      const hostID: number | undefined = message[3];
 
       this._handleQuery(messageID, query, hostID);
       return;
@@ -192,15 +197,15 @@ class PWBBase {
 }
 
 class PWBHost extends PWBBase {
-  _errorCallback: ErrorCallback | void;
+  _errorCallback: ErrorCallback | undefined;
 
-  _hostID: number | void; // Only defined on host
+  _hostID: number | undefined; // Only defined on host
 
-  _hostIDQueue: (() => void)[] | void;
+  _hostIDQueue: (() => void)[] | undefined;
 
-  _worker: SharedWorker | Worker;
+  _worker: SharedWorker.SharedWorker | Worker;
 
-  constructor(worker: SharedWorker | Worker) {
+  constructor(worker: SharedWorker.SharedWorker | Worker) {
     super();
 
     // The following if statement used to check `worker instanceof Worker` but I have recieved
@@ -212,17 +217,18 @@ class PWBHost extends PWBBase {
     //     console.log(worker instanceof Worker);
     //
     // So instead, let's do this test for worker.port which only exists on shared workers.
+    // @ts-ignore
     if (worker.port === undefined) {
       this._workerType = "Worker";
 
-      // $FlowFixMe Seems to not recognize 'message' as valid type, but it is
+      // @ts-ignore
       worker.addEventListener("message", this._onMessage);
     } else {
       this._workerType = "SharedWorker";
 
-      // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
+      // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
       worker.port.addEventListener("message", this._onMessage);
-      // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
+      // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
       worker.port.start();
 
       // Handle tab close. This isn't perfect, but there is no perfect method
@@ -256,10 +262,10 @@ class PWBHost extends PWBBase {
   _postMessage(obj: any[]) {
     // console.log('_postMessage', obj);
     if (this._workerType === "Worker") {
-      // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
+      // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
       this._worker.postMessage(obj);
     } else if (this._workerType === "SharedWorker") {
-      // $FlowFixMe - it doesn't know if _worker is Worker or SharedWorker, but I do
+      // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
       this._worker.port.postMessage(obj);
     } else {
       throw new Error("WTF");
@@ -268,7 +274,7 @@ class PWBHost extends PWBBase {
 
   postMessage(userMessage: any): Promise<any> {
     // console.log('postMessage', userMessage, targetHostID);
-    const actuallyPostMessage = (resolve, reject) => {
+    const actuallyPostMessage = (resolve: (value?: any) => void, reject: (reason?: any) => void) => {
       const messageID = messageIDs;
       messageIDs += 1;
 
@@ -304,7 +310,7 @@ class PWBHost extends PWBBase {
 
   _onMessage(e: MessageEvent) {
     const common = this._onMessageCommon(e);
-    if (common === undefined) {
+    if (!common) {
       return;
     }
 
@@ -314,7 +320,7 @@ class PWBHost extends PWBBase {
       if (message[2] !== undefined && typeof message[2] !== "number") {
         throw new Error("Invalid hostID");
       }
-      const hostID: number | void = message[2];
+      const hostID: number | undefined = message[2];
 
       this._hostID = hostID;
 
@@ -350,16 +356,21 @@ class PWBWorker extends PWBBase {
   constructor() {
     super();
 
+    // Only actually used for SharedWorker
+    this._hosts = new Map();
+    this._maxHostID = -1;
+
     if (
+      // @ts-ignore
       typeof SharedWorkerGlobalScope !== "undefined" &&
+      // @ts-ignore
       self instanceof SharedWorkerGlobalScope
     ) {
       this._workerType = "SharedWorker";
 
-      this._hosts = new Map();
-      this._maxHostID = -1;
 
       self.addEventListener("connect", e => {
+        // @ts-ignore
         const port = e.ports[0];
         port.addEventListener("message", (e2: MessageEvent) =>
           this._onMessage(e2)
@@ -405,7 +416,7 @@ class PWBWorker extends PWBBase {
     }
   }
 
-  _postMessage(obj: any[], targetHostID: number | void) {
+  _postMessage(obj: any[], targetHostID?: number | undefined) {
     // console.log('_postMessage', obj, targetHostID);
     if (this._workerType === "SharedWorker") {
       // If targetHostID has been deleted, this will do nothing, which is fine I think
@@ -415,15 +426,19 @@ class PWBWorker extends PWBBase {
         }
       });
     } else if (this._workerType === "Worker") {
+      // @ts-ignore
       self.postMessage(obj);
     } else {
       throw new Error("WTF");
     }
   }
 
-  postMessage(userMessage: any, targetHostID: number | void): Promise<any> {
+  postMessage(
+    userMessage: any,
+    targetHostID: number | undefined
+  ): Promise<any> {
     // console.log('postMessage', userMessage, targetHostID);
-    const actuallyPostMessage = (resolve, reject) => {
+    const actuallyPostMessage = (resolve: (value?: any) => void, reject: (reason?: any) => void) => {
       const messageID = messageIDs;
       messageIDs += 1;
 
@@ -446,7 +461,7 @@ class PWBWorker extends PWBBase {
 
   _onMessage(e: MessageEvent) {
     const common = this._onMessageCommon(e);
-    if (common === undefined) {
+    if (!common) {
       return;
     }
 

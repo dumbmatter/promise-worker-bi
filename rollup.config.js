@@ -1,7 +1,7 @@
 const babel = require("rollup-plugin-babel");
 
 module.exports = {
-  input: "index.js",
+  input: "src/index.ts",
   output: [
     {
       file: "dist/commonjs.js",
@@ -12,5 +12,9 @@ module.exports = {
       format: "esm"
     }
   ],
-  plugins: [babel()]
+  plugins: [
+    babel({
+      extensions: [".mjs", ".js", ".json", ".node", ".ts", ".tsx"]
+    })
+  ]
 };
