@@ -1,3 +1,7 @@
+# v4.0.2, 2020-05-14
+
+Upgrade dependencies, fix for TypeScript 3.9 while breaking for any older versions of TypeScript.
+
 # v4.0.1, 2020-01-13
 
 Switched from Flow to TypeScript, cause momentum. Sadly TypeScript sucks at supporting shared workers, so the typings are a bit worse, but promise-worker-bi works the same.

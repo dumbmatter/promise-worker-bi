@@ -203,9 +203,9 @@ class PWBHost extends PWBBase {
 
   _hostIDQueue: (() => void)[] | undefined;
 
-  _worker: SharedWorker.SharedWorker | Worker;
+  _worker: SharedWorker | Worker;
 
-  constructor(worker: SharedWorker.SharedWorker | Worker) {
+  constructor(worker: SharedWorker | Worker) {
     super();
 
     // The following if statement used to check `worker instanceof Worker` but I have recieved
