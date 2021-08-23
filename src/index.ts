@@ -1,5 +1,12 @@
+interface TransferableResponse
+{
+  message: any,
+  // eslint-disable-next-line no-undef
+  transfer: Array<Transferable>
+}
+
 type ErrorCallback = (a: Error) => void;
-type QueryCallback = (a: any[], b: number | undefined) => any;
+type QueryCallback = (a: any[], b: number | undefined) => TransferableResponse|any;
 
 type FakeError = {
   name: string;
@@ -97,14 +104,14 @@ class PWBBase {
   }
 
   // eslint-disable-next-line
-  _postMessage(obj: any[], targetHostID?: number | undefined) {
+  _postMessage(obj: any[], targetHostID?: number | undefined, transferable?: Array<Transferable> | undefined) {
     throw new Error("Not implemented");
   }
 
   _postResponse(
     messageID: number,
     error: Error | null,
-    result?: any,
+    result?: any | TransferableResponse,
     hostID?: number | undefined
   ) {
     // console.log('_postResponse', messageID, error, result);
@@ -115,12 +122,14 @@ class PWBBase {
         [MSGTYPE_RESPONSE, messageID, toFakeError(error)],
         hostID
       );
+    } else if(result !== undefined && result !== null && result.message !== undefined && Array.isArray(result.transfer)) {
+      this._postMessage([MSGTYPE_RESPONSE, messageID, null, result.message], hostID, result.transfer);
     } else {
       this._postMessage([MSGTYPE_RESPONSE, messageID, null, result], hostID);
     }
   }
 
-  _handleQuery(messageID: number, query: any, hostID: number | undefined) {
+  _handleQuery(messageID: number, query: TransferableResponse|any, hostID: number | undefined) {
     // console.log('_handleQuery', messageID, query);
     try {
       const result = this._queryCallback(query, hostID);
@@ -248,7 +257,6 @@ class PWBHost extends PWBBase {
   }
 
   registerError(cb: ErrorCallback) {
-    // console.log('registerError', cb);
     this._errorCallback = cb;
 
     // Some browsers (Firefox) call onerror on every host, while others
@@ -259,20 +267,31 @@ class PWBHost extends PWBBase {
     });
   }
 
-  _postMessage(obj: any[]) {
-    // console.log('_postMessage', obj);
+  // eslint-disable-next-line no-unused-vars,no-undef
+  _postMessage(obj: any[], targetHostID?: number | undefined, transferable?: Array<Transferable> | undefined) {
     if (this._workerType === "Worker") {
-      // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
-      this._worker.postMessage(obj);
+      if(Array.isArray(transferable)) {
+        // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
+        this._worker.postMessage(obj, transferable);
+      } else {
+        // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
+        this._worker.postMessage(obj);
+      }
     } else if (this._workerType === "SharedWorker") {
-      // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
-      this._worker.port.postMessage(obj);
+      if(Array.isArray(transferable)) {
+        // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
+        this._worker.port.postMessage(obj, transferable);
+      } else {
+        // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
+        this._worker.port.postMessage(obj);
+      }
     } else {
       throw new Error("WTF");
     }
   }
 
-  postMessage(userMessage: any): Promise<any> {
+  // eslint-disable-next-line no-undef
+  postMessage(userMessage: any, transferable?: Array<Transferable> | undefined): Promise<any> {
     // console.log('postMessage', userMessage, targetHostID);
     const actuallyPostMessage = (resolve: (value?: any) => void, reject: (reason?: any) => void) => {
       const messageID = messageIDs;
@@ -292,7 +311,7 @@ class PWBHost extends PWBBase {
           resolve(result);
         }
       });
-      this._postMessage(messageToSend);
+      this._postMessage(messageToSend, undefined, transferable);
     };
 
     return new Promise((resolve, reject) => {
@@ -416,18 +435,28 @@ class PWBWorker extends PWBBase {
     }
   }
 
-  _postMessage(obj: any[], targetHostID?: number | undefined) {
+  // eslint-disable-next-line no-undef
+  _postMessage(obj: any[], targetHostID?: number | undefined, transferable?: Array<Transferable> | undefined) {
     // console.log('_postMessage', obj, targetHostID);
     if (this._workerType === "SharedWorker") {
       // If targetHostID has been deleted, this will do nothing, which is fine I think
       this._hosts.forEach(({ port }, hostID) => {
         if (targetHostID === undefined || targetHostID === hostID) {
-          port.postMessage(obj);
+          if(Array.isArray(transferable)){
+            port.postMessage(obj, transferable);
+          } else {
+            port.postMessage(obj);
+          }
         }
       });
     } else if (this._workerType === "Worker") {
-      // @ts-ignore
-      self.postMessage(obj);
+      if(Array.isArray(transferable)) {
+        // @ts-ignore
+        self.postMessage(obj, transferable);
+      } else {
+        // @ts-ignore
+        self.postMessage(obj);
+      }
     } else {
       throw new Error("WTF");
     }
@@ -435,7 +464,9 @@ class PWBWorker extends PWBBase {
 
   postMessage(
     userMessage: any,
-    targetHostID: number | undefined
+    targetHostID: number | undefined,
+    // eslint-disable-next-line no-undef
+    transferable?: Array<Transferable> | undefined
   ): Promise<any> {
     // console.log('postMessage', userMessage, targetHostID);
     const actuallyPostMessage = (resolve: (value?: any) => void, reject: (reason?: any) => void) => {
@@ -451,7 +482,7 @@ class PWBWorker extends PWBBase {
           resolve(result);
         }
       });
-      this._postMessage(messageToSend, targetHostID);
+      this._postMessage(messageToSend, targetHostID, transferable);
     };
 
     return new Promise((resolve, reject) => {
