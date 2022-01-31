@@ -435,7 +435,7 @@ class PWBWorker extends PWBBase {
 
   postMessage(
     userMessage: any,
-    targetHostID: number | undefined
+    targetHostID?: number | undefined
   ): Promise<any> {
     // console.log('postMessage', userMessage, targetHostID);
     const actuallyPostMessage = (resolve: (value?: any) => void, reject: (reason?: any) => void) => {
