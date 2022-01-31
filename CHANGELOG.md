@@ -1,3 +1,7 @@
+# v4.0.3, 2022-01-30
+
+Just a fix to the TypeScript types - the second argument to `PWBWorker.postMessage` is optional. See #5 from @Jazcash
+
 # v4.0.2, 2020-05-14
 
 Upgrade dependencies, fix for TypeScript 3.9 while breaking for any older versions of TypeScript.
