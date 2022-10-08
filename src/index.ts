@@ -268,7 +268,7 @@ class PWBHost extends PWBBase {
     _hostID?: unknown,
     transfer?: Transferable[] | undefined
   ) {
-    // console.log('_postMessage', obj);
+    // console.log('_postMessage', obj, _hostID, transfer);
     if (this._workerType === "Worker") {
       // @ts-expect-error - it doesn't know if _worker is Worker or SharedWorker, but I do
       this._worker.postMessage(obj, transfer);
@@ -282,9 +282,10 @@ class PWBHost extends PWBBase {
 
   postMessage(
     userMessage: any,
+    _hostID?: undefined,
     transfer?: Transferable[] | undefined
   ): Promise<any> {
-    // console.log('postMessage', userMessage, targetHostID);
+    // console.log('postMessage', userMessage, _hostID, transfer);
     const actuallyPostMessage = (
       resolve: (value?: any) => void,
       reject: (reason?: any) => void

@@ -603,14 +603,15 @@ describe("transferable", function () {
   this.timeout(120000);
 
   it("from host to worker", async () => {
-    const buffer = new ArrayBuffer(1);
-
     const worker = new Worker(`${pathPrefix}worker-echo.js`);
-    worker.postMessage(buffer);
+    const promiseWorker = new PWBHost(worker);
+
+    const buffer = new ArrayBuffer(1);
+    await promiseWorker.postMessage(buffer);
     assert.equal(buffer.byteLength, 1);
 
     // byteLength goes to 0 when transfered https://developer.chrome.com/blog/transferable-objects-lightning-fast/
-    worker.postMessage(buffer, [buffer]);
+    await promiseWorker.postMessage(buffer, undefined, [buffer]);
     assert.equal(buffer.byteLength, 0);
   });
 

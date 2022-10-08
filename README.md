@@ -16,8 +16,8 @@ Inside your main bundle:
 // main.js
 import { PWBHost } from "promise-worker-bi";
 
-var worker = new Worker("worker.js");
-var promiseWorker = new PWBHost(worker);
+const worker = new Worker("worker.js");
+const promiseWorker = new PWBHost(worker);
 
 // Only needed if you send messages from the worker to the host
 promiseWorker.register((message) => {
@@ -38,7 +38,7 @@ Inside your `worker.js` bundle:
 // worker.js
 import { PWBWorker } from "promise-worker-bi";
 
-var promiseWorker = new PWBWorker();
+const promiseWorker = new PWBWorker();
 
 // Only needed if you send messages from the host to the worker
 promiseWorker.register((message) => {
@@ -158,8 +158,8 @@ Here's an example:
 // main.js
 import { PWBHost } from "promise-worker-bi";
 
-var worker = new SharedWorker("worker.js");
-var promiseWorker = new PWBHost(worker);
+const worker = new SharedWorker("worker.js");
+const promiseWorker = new PWBHost(worker);
 
 promiseWorker.register((message) => {
   console.log(message);
@@ -177,8 +177,8 @@ setTimeout(async () => {
 // main2.js
 import { PWBHost } from "promise-worker-bi";
 
-var worker = new SharedWorker("worker.js");
-var promiseWorker = new PWBHost(worker);
+const worker = new SharedWorker("worker.js");
+const promiseWorker = new PWBHost(worker);
 
 promiseWorker.register((message) => {
   console.log(message);
@@ -196,7 +196,7 @@ setTimeout(() => {
 // worker.js
 import { PWBWorker } from "promise-worker-bi";
 
-var promiseWorker = new PWBWorker();
+const promiseWorker = new PWBWorker();
 
 promiseWorker.register((message, hostID) => {
   if (message === "broadcast") {
@@ -221,6 +221,24 @@ And this in the second tab:
     Echoed response: just this tab
 
 (If you open main2.js first, "hello host 1" will instead be "hello host 0".)
+
+## Transferable objects
+
+It is possible to [transfer certain types of objects](https://developer.mozilla.org/en-US/docs/Glossary/Transferable_objects) from host to worker or from worker to host. The syntax is similar to how it works with [a normal `postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Worker/postMessage), where an array of the objects to be transferred is added as an additional parameter.
+
+One tricky thing - because `promiseWorker.postMessage` already has a second argument for specifying an optional `hostID` value fo sending a message from a shared worker to a specific host, the transferables argument is the third argument:
+
+```js
+const buffer = new ArrayBuffer(1);
+promiseWorker.postMessage(buffer, hostID, [buffer]);
+```
+
+From host to worker, the `hostID` argument doesn't do anything, so in most situations (host -> worker, web worker -> host, shared worker -> all hosts) you can pass `undefined` as the second argument:
+
+```js
+const buffer = new ArrayBuffer(1);
+promiseWorker.postMessage(buffer, undefined, [buffer]);
+```
 
 ## Browser support
 
@@ -268,7 +286,7 @@ Register a message handler wherever you will be receiving messages: in the worke
 
 The `hostID` parameter is only defined inside a shared worker, in which case it is a unique number identifying the host that the message came from.
 
-#### `promiseWorker.postMessage(message: any, hostID?: number): Promise<any>`
+#### `promiseWorker.postMessage(message: any, hostID?: number, transfers?: Transferable[]): Promise<any>`
 
 Send a message to the browser or worker and return a Promise.
 
