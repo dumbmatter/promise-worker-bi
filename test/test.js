@@ -617,6 +617,13 @@ describe("transferable", function () {
     ]);
     assert.equal(buffer.byteLength, 0);
     assert.equal(response2.byteLength, 1);
+
+    // Wait for async errors in worker to happen
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 500);
+    });
   });
 
   it("from worker to host", async () => {
@@ -630,7 +637,10 @@ describe("transferable", function () {
     promiseWorker.register((buffer) => {
       assert.equal(buffer.byteLength, 1);
       buffers.push(buffer);
-      return buffer;
+      return {
+        message: buffer,
+        _PWB_TRANSFER: [buffer],
+      };
     });
 
     await new Promise((resolve) => {

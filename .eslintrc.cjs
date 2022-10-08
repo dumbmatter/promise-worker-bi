@@ -21,5 +21,6 @@ module.exports = {
       { ignoreParameters: true, ignoreProperties: true },
     ],
     "@typescript-eslint/no-var-requires": "off",
+    "no-prototype-builtins": "off",
   },
 };

@@ -1,3 +1,21 @@
+# v4.1.0, ???
+
+Added support for transferable objects in messages and responses from both the host and worker. Example:
+
+```
+const buffer = new ArrayBuffer(1);
+promiseWorker.postMessage(buffer, undefined, [buffer]);
+
+promiseWorker.register(async (buffer) => {
+  const processed = await processBuffer(buffer);
+
+  return {
+    message: processed,
+    _PWB_TRANSFER: [processed.someTransferableProprty],
+  };
+});
+```
+
 # v4.0.3, 2022-01-30
 
 Just a fix to the TypeScript types - the second argument to `PWBWorker.postMessage` is optional. See #5 from @Jazcash
@@ -18,9 +36,13 @@ Split the old PromiseWorker class into two separate classes PWBHost and PWBWorke
 
 This should obviously print "true":
 
-    blob = new Blob(["self.onmessage = function() {};"], { type: "text/javascript" });
-    worker = new Worker(window.URL.createObjectURL(blob));
-    console.log(worker instanceof Worker);
+```js
+blob = new Blob(["self.onmessage = function() {};"], {
+  type: "text/javascript",
+});
+worker = new Worker(window.URL.createObjectURL(blob));
+console.log(worker instanceof Worker);
+```
 
 However in some rare cases, it will print "false" in Safari. This caused bugs in prior versions of promise-worker-bi, but this release includes a workaround.
 

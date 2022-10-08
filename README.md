@@ -57,7 +57,7 @@ try {
 
 ### Message format
 
-The message you send can be any object, array, string, number, etc. - anything that is serializable by the structured clone algorithm:
+The message you send can be any object, array, string, number, etc. - anything that is serializable by the [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm):
 
 ```js
 await promiseWorker.postMessage({
@@ -240,6 +240,21 @@ const buffer = new ArrayBuffer(1);
 promiseWorker.postMessage(buffer, undefined, [buffer]);
 ```
 
+If you want to respond to a message by sending a transferable object back, such as if you want to send an object a worker for processing and then return it to the host, you can do it like this, in either the worker or host:
+
+```js
+promiseWorker.register(async (message) => {
+  const processedMessage = await processMessage(message);
+
+  return {
+    message: processedMessage,
+    _PWB_TRANSFER: [processedMessage.someTransferableProprty],
+  };
+});
+```
+
+That `_PWB_TRANSFER` property is used internally by promise-worker-bi under the assumption that no normal object in your application would have a property with that name.
+
 ## Browser support
 
 In theory it should work in:
@@ -286,8 +301,12 @@ Register a message handler wherever you will be receiving messages: in the worke
 
 The `hostID` parameter is only defined inside a shared worker, in which case it is a unique number identifying the host that the message came from.
 
-#### `promiseWorker.postMessage(message: any, hostID?: number, transfers?: Transferable[]): Promise<any>`
+The return value of the callback function (shown above as `any`) must resolve to something [structured cloneable](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).
 
-Send a message to the browser or worker and return a Promise.
+If you want to [transfer an object](https://developer.mozilla.org/en-US/docs/Glossary/Transferable_objects) in the return value of the callback, then the return type should be `{ message: any, transfer: Transferable[] }` rather than just `any`.
+
+#### `promiseWorker.postMessage(message: any, hostID?: number, transfer?: Transferable[]): Promise<any>`
+
+Send a message to the browser or worker and return a Promise. `message` must resolve to something [structured cloneable](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).
 
 The `hostID` parameter is only meaningful when sending a message from a shared worker. If you leave it out, it will send the message to all hosts. If you include it, it will send the message only to that specific host. You can get the `hostID` from the `promiseWorker.register` function described above.

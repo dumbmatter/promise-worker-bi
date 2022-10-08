@@ -120,7 +120,19 @@ abstract class PWBBase {
         hostID
       );
     } else {
-      this._postMessage([MSGTYPE_RESPONSE, messageID, null, result], hostID);
+      // Hackily identify when message contains transferable objects
+      if (
+        result.hasOwnProperty("message") &&
+        result.hasOwnProperty("_PWB_TRANSFER")
+      ) {
+        this._postMessage(
+          [MSGTYPE_RESPONSE, messageID, null, result.message],
+          hostID,
+          result._PWB_TRANSFER
+        );
+      } else {
+        this._postMessage([MSGTYPE_RESPONSE, messageID, null, result], hostID);
+      }
     }
   }
 
