@@ -22,7 +22,7 @@ const MSGTYPES = [
   MSGTYPE_RESPONSE,
   MSGTYPE_HOST_ID,
   MSGTYPE_HOST_CLOSE,
-  MSGTYPE_WORKER_ERROR
+  MSGTYPE_WORKER_ERROR,
 ];
 
 // Inlined from https://github.com/then/is-promise
@@ -34,7 +34,7 @@ const isPromise = (obj: any) =>
 const toFakeError = (error: Error): FakeError => {
   const fakeError: FakeError = {
     name: error.name,
-    message: error.message
+    message: error.message,
   };
 
   if (typeof error.stack === "string") {
@@ -42,19 +42,19 @@ const toFakeError = (error: Error): FakeError => {
   }
 
   // These are non-standard properties, I think only in some versions of Firefox
-  // @ts-ignore
+  // @ts-expect-error
   if (typeof error.fileName === "string") {
-    // @ts-ignore
+    // @ts-expect-error
     fakeError.fileName = error.fileName;
   }
-  // @ts-ignore
+  // @ts-expect-error
   if (typeof error.columnNumber === "number") {
-    // @ts-ignore
+    // @ts-expect-error
     fakeError.columnNumber = error.columnNumber;
   }
-  // @ts-ignore
+  // @ts-expect-error
   if (typeof error.lineNumber === "number") {
-    // @ts-ignore
+    // @ts-expect-error
     fakeError.lineNumber = error.lineNumber;
   }
 
@@ -62,7 +62,7 @@ const toFakeError = (error: Error): FakeError => {
 };
 
 // Object rather than FakeError for convenience
-const fromFakeError = (fakeError: Object): Error => {
+const fromFakeError = (fakeError: unknown): Error => {
   const error = new Error();
   return Object.assign(error, fakeError);
 };
@@ -85,9 +85,11 @@ class PWBBase {
   constructor() {
     // console.log('constructor', worker);
     this._callbacks = new Map();
+
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     this._queryCallback = () => {};
 
-    // @ts-ignore
+    // @ts-expect-error
     this._onMessage = this._onMessage.bind(this);
   }
 
@@ -138,7 +140,7 @@ class PWBBase {
         );
       }
     } catch (err) {
-      this._postResponse(messageID, err);
+      this._postResponse(messageID, err as Error);
     }
   }
 
@@ -217,18 +219,18 @@ class PWBHost extends PWBBase {
     //     console.log(worker instanceof Worker);
     //
     // So instead, let's do this test for worker.port which only exists on shared workers.
-    // @ts-ignore
+    // @ts-expect-error
     if (worker.port === undefined) {
       this._workerType = "Worker";
 
-      // @ts-ignore
+      // @ts-expect-error
       worker.addEventListener("message", this._onMessage);
     } else {
       this._workerType = "SharedWorker";
 
-      // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
+      // @ts-expect-error - it doesn't know if _worker is Worker or SharedWorker, but I do
       worker.port.addEventListener("message", this._onMessage);
-      // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
+      // @ts-expect-error - it doesn't know if _worker is Worker or SharedWorker, but I do
       worker.port.start();
 
       // Handle tab close. This isn't perfect, but there is no perfect method
@@ -262,10 +264,10 @@ class PWBHost extends PWBBase {
   _postMessage(obj: any[]) {
     // console.log('_postMessage', obj);
     if (this._workerType === "Worker") {
-      // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
+      // @ts-expect-error - it doesn't know if _worker is Worker or SharedWorker, but I do
       this._worker.postMessage(obj);
     } else if (this._workerType === "SharedWorker") {
-      // @ts-ignore - it doesn't know if _worker is Worker or SharedWorker, but I do
+      // @ts-expect-error - it doesn't know if _worker is Worker or SharedWorker, but I do
       this._worker.port.postMessage(obj);
     } else {
       throw new Error("WTF");
@@ -274,7 +276,10 @@ class PWBHost extends PWBBase {
 
   postMessage(userMessage: any): Promise<any> {
     // console.log('postMessage', userMessage, targetHostID);
-    const actuallyPostMessage = (resolve: (value?: any) => void, reject: (reason?: any) => void) => {
+    const actuallyPostMessage = (
+      resolve: (value?: any) => void,
+      reject: (reason?: any) => void
+    ) => {
       const messageID = messageIDs;
       messageIDs += 1;
 
@@ -282,7 +287,7 @@ class PWBHost extends PWBBase {
         MSGTYPE_QUERY,
         messageID,
         userMessage,
-        this._hostID
+        this._hostID,
       ];
 
       this._callbacks.set(messageID, (error: Error | null, result: any) => {
@@ -325,7 +330,7 @@ class PWBHost extends PWBBase {
       this._hostID = hostID;
 
       if (this._hostIDQueue !== undefined) {
-        this._hostIDQueue.forEach(func => {
+        this._hostIDQueue.forEach((func) => {
           // Not entirely sure why setTimeout is needed, might be just for unit tests
           setTimeout(() => {
             func();
@@ -361,16 +366,15 @@ class PWBWorker extends PWBBase {
     this._maxHostID = -1;
 
     if (
-      // @ts-ignore
+      // @ts-expect-error
       typeof SharedWorkerGlobalScope !== "undefined" &&
-      // @ts-ignore
+      // @ts-expect-error
       self instanceof SharedWorkerGlobalScope
     ) {
       this._workerType = "SharedWorker";
 
-
-      self.addEventListener("connect", e => {
-        // @ts-ignore
+      self.addEventListener("connect", (e) => {
+        // @ts-expect-error
         const port = e.ports[0];
         port.addEventListener("message", (e2: MessageEvent) =>
           this._onMessage(e2)
@@ -426,7 +430,6 @@ class PWBWorker extends PWBBase {
         }
       });
     } else if (this._workerType === "Worker") {
-      // @ts-ignore
       self.postMessage(obj);
     } else {
       throw new Error("WTF");
@@ -438,7 +441,10 @@ class PWBWorker extends PWBBase {
     targetHostID?: number | undefined
   ): Promise<any> {
     // console.log('postMessage', userMessage, targetHostID);
-    const actuallyPostMessage = (resolve: (value?: any) => void, reject: (reason?: any) => void) => {
+    const actuallyPostMessage = (
+      resolve: (value?: any) => void,
+      reject: (reason?: any) => void
+    ) => {
       const messageID = messageIDs;
       messageIDs += 1;
 

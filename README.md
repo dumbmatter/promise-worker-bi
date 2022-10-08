@@ -20,18 +20,16 @@ var worker = new Worker("worker.js");
 var promiseWorker = new PWBHost(worker);
 
 // Only needed if you send messages from the worker to the host
-promiseWorker.register(function(message) {
+promiseWorker.register((message) => {
   return "pong2";
 });
 
-promiseWorker
-  .postMessage("ping")
-  .then(function(response) {
-    // handle response 'pong'
-  })
-  .catch(function(error) {
-    // handle error
-  });
+try {
+  const response = await promiseWorker.postMessage("ping");
+  // handle response 'pong'
+} catch (error) {
+  // handle error
+}
 ```
 
 Inside your `worker.js` bundle:
@@ -43,45 +41,34 @@ import { PWBWorker } from "promise-worker-bi";
 var promiseWorker = new PWBWorker();
 
 // Only needed if you send messages from the host to the worker
-promiseWorker.register(function(message) {
+promiseWorker.register((message) => {
   return "pong";
 });
 
-promiseWorker
-  .postMessage("ping2")
-  .then(function(response) {
-    // handle response 'pong2'
-  })
-  .catch(function(error) {
-    // handle error
-  });
+try {
+  const response = await promiseWorker.postMessage("ping2");
+  // handle response 'pong2'
+} catch (error) {
+  // handle error
+}
 ```
 
 **Notice that except for initialization of the `promiseWorker` object, the API is identical in the browser and in the worker. Either one can initiate a message.** In all of the subsequent examples, `promiseWorker` initialization is omitted, so you can put the two blocks of code respectively in the worker and browser, or in the browser and worker.
-
-And it's even better with async/await:
-
-```js
-const response = await promiseWorker.postMessage("ping2");
-// response contains 'pong2'
-```
 
 ### Message format
 
 The message you send can be any object, array, string, number, etc. - anything that is serializable by the structured clone algorithm:
 
 ```js
-promiseWorker
-  .postMessage({
-    hello: "world",
-    answer: 42,
-    "this is fun": true
-  })
-  .then(/* ... */);
+await promiseWorker.postMessage({
+  hello: "world",
+  answer: 42,
+  "this is fun": true,
+});
 ```
 
 ```js
-promiseWorker.register(function(message) {
+promiseWorker.register((message) => {
   console.log(message); // { hello: 'world', answer: 42, 'this is fun': true }
 });
 ```
@@ -91,17 +78,14 @@ promiseWorker.register(function(message) {
 The registered handler can return either a Promise or a normal value:
 
 ```js
-promiseWorker.register(function() {
-  return Promise.resolve().then(function() {
-    return "much async, very promise";
-  });
+promiseWorker.register(async () => {
+  "much async, very promise";
 });
 ```
 
 ```js
-promiseWorker.postMessage(null).then(function (message) {
-  console.log(message): // 'much async, very promise'
-});
+const message = await promiseWorker.postMessage(null);
+console.log(message): // 'much async, very promise'
 ```
 
 ### Error handling
@@ -109,23 +93,27 @@ promiseWorker.postMessage(null).then(function (message) {
 Any thrown errors or asynchronous rejections during a response will be propagated as a rejected promise. For instance:
 
 ```js
-promiseWorker.register(function(message) {
+promiseWorker.register((message) => {
   throw new Error("naughty!");
 });
 ```
 
 ```js
-promiseWorker.postMessage("whoops").catch(function(err) {
-  console.log(err.message); // 'naughty!'
-});
+try {
+  await promiseWorker.postMessage("whoops");
+} catch (error) {
+  console.log(error.message); // 'naughty!'
+}
 ```
 
 But what about errors in the worker that are _not_ during a response? (Errors in the host, you can handle as you would normally do.)
 
-For a Web Worker, we could just use [the normal `error` event](https://developer.mozilla.org/en-US/docs/Web/API/AbstractWorker/onerror) and be fine. But for a Shared Worker, that is not the case, because browsers seem to handle errors inside Shared Workers differently (currently Firefox seems to send the normal `error` event to all hosts, but [Chrome does not](https://bugs.chromium.org/p/chromium/issues/detail?id=105001)). Therefore, promise-worker-bi includes a unified API that works in Web Workers and Shared Workers.
+For a Web Worker, we could just use [the normal `error` event](https://developer.mozilla.org/en-US/docs/Web/API/AbstractWorker/onerror) and be fine. But for a Shared Worker, that is not the case, because browsers seem to handle errors inside Shared Workers differently (currently Firefox seems to send the normal `error` event to all hosts, but [Chrome does not](https://bugs.chromium.org/p/chromium/issues/detail?id=105001)).
+
+Therefore, promise-worker-bi includes a unified API that works in Web Workers and Shared Workers. Include some code like this in your host:
 
 ```js
-promiseWorker.registerError(function(err) {
+promiseWorker.registerError((error) => {
   console.log("Error inside worker!", err);
 });
 ```
@@ -141,21 +129,17 @@ If you use a source map for your worker script, this will not be reflected in th
 If you need to send messages of multiple types to the worker, just add some type information to the message you send:
 
 ```js
-promiseWorker
-  .postMessage({
-    type: "en"
-  })
-  .then(/* ... */);
+const response1 = await promiseWorker.postMessage({
+  type: "en",
+});
 
-promiseWorker
-  .postMessage({
-    type: "fr"
-  })
-  .then(/* ... */);
+const response2 = await promiseWorker.postMessage({
+  type: "en",
+});
 ```
 
 ```js
-promiseWorker.register(function(message) {
+promiseWorker.register((message) => {
   if (message.type === "en") {
     return "Hello!";
   } else if (message.type === "fr") {
@@ -177,16 +161,15 @@ import { PWBHost } from "promise-worker-bi";
 var worker = new SharedWorker("worker.js");
 var promiseWorker = new PWBHost(worker);
 
-promiseWorker.register(function(message) {
+promiseWorker.register((message) => {
   console.log(message);
 });
 
 // setTimeout is just to give you enough time to open main.js and main2.js in
 // two separate tabs.
-setTimeout(function() {
-  promiseWorker.postMessage("broadcast").then(function(response) {
-    console.log("Echoed response:", response);
-  });
+setTimeout(async () => {
+  const response = await promiseWorker.postMessage("broadcast");
+  console.log("Echoed response:", response);
 }, 1000);
 ```
 
@@ -197,16 +180,15 @@ import { PWBHost } from "promise-worker-bi";
 var worker = new SharedWorker("worker.js");
 var promiseWorker = new PWBHost(worker);
 
-promiseWorker.register(function(message) {
+promiseWorker.register((message) => {
   console.log(message);
 });
 
 // setTimeout is just to give you enough time to open main.js and main2.js in
 // two separate tabs.
-setTimeout(function() {
-  promiseWorker.postMessage("just this tab").then(function(response) {
-    console.log("Echoed response:", response);
-  });
+setTimeout(() => {
+  const reponse = await promiseWorker.postMessage("just this tab");
+  console.log("Echoed response:", response);
 }, 2000);
 ```
 
@@ -216,11 +198,11 @@ import { PWBWorker } from "promise-worker-bi";
 
 var promiseWorker = new PWBWorker();
 
-promiseWorker.register(function(message, hostID) {
+promiseWorker.register((message, hostID) => {
   if (message === "broadcast") {
     promiseWorker.postMessage("to all tabs");
   } else {
-    promiseWorker.postMessage("hello host " + hostID, hostID);
+    promiseWorker.postMessage(`hello host ${hostID}`, hostID);
   }
 
   return message;
@@ -242,6 +224,8 @@ And this in the second tab:
 
 ## Browser support
 
+In theory it should work in:
+
 - Chrome
 - Firefox
 - Safari 8+
@@ -249,8 +233,6 @@ And this in the second tab:
 - Edge
 - iOS 8+
 - Android 4.4+
-
-Old browsers will need Map and Promise polyfills.
 
 There used to be automated tests in various browsers via [zuul](https://github.com/defunctzombie/zuul) and Sauce Labs, but it suffered bit rot and I could no longer get it to work consistently (PRs welcome!). Currently, `yarn test` uses [Karma](https://karma-runner.github.io/) to run tests in whatever versions of Chrome and Firefox you have installed.
 

@@ -1,6 +1,6 @@
 import { PWBWorker } from "../dist/esmodules";
 
-// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const promiseWorker = new PWBWorker();
 
 setTimeout(() => {
