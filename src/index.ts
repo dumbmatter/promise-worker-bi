@@ -122,6 +122,8 @@ abstract class PWBBase {
     } else {
       // Hackily identify when message contains transferable objects
       if (
+        typeof result === "object" &&
+        result !== null &&
         result.hasOwnProperty("message") &&
         result.hasOwnProperty("_PWB_TRANSFER")
       ) {
