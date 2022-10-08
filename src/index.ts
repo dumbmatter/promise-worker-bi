@@ -75,7 +75,7 @@ const logError = (err: Error) => {
   /* eslint-enable no-console */
 };
 
-class PWBBase {
+abstract class PWBBase {
   _callbacks: Map<number, (a: Error | null, b: any) => void>;
 
   _queryCallback: QueryCallback;
@@ -98,10 +98,12 @@ class PWBBase {
     this._queryCallback = cb;
   }
 
-  // eslint-disable-next-line
-  _postMessage(obj: any[], targetHostID?: number | undefined) {
-    throw new Error("Not implemented");
-  }
+  // From worker, 2nd param could be hostID if sending to specific host. From UI, 2nd param could be an array of transferable objects
+  abstract _postMessage(
+    obj: any[],
+    hostID?: number | undefined,
+    transfer?: Transferable[] | undefined
+  ): void;
 
   _postResponse(
     messageID: number,
@@ -261,20 +263,27 @@ class PWBHost extends PWBBase {
     });
   }
 
-  _postMessage(obj: any[]) {
+  _postMessage(
+    obj: any[],
+    _hostID?: unknown,
+    transfer?: Transferable[] | undefined
+  ) {
     // console.log('_postMessage', obj);
     if (this._workerType === "Worker") {
       // @ts-expect-error - it doesn't know if _worker is Worker or SharedWorker, but I do
-      this._worker.postMessage(obj);
+      this._worker.postMessage(obj, transfer);
     } else if (this._workerType === "SharedWorker") {
       // @ts-expect-error - it doesn't know if _worker is Worker or SharedWorker, but I do
-      this._worker.port.postMessage(obj);
+      this._worker.port.postMessage(obj, transfer);
     } else {
       throw new Error("WTF");
     }
   }
 
-  postMessage(userMessage: any): Promise<any> {
+  postMessage(
+    userMessage: any,
+    transfer?: Transferable[] | undefined
+  ): Promise<any> {
     // console.log('postMessage', userMessage, targetHostID);
     const actuallyPostMessage = (
       resolve: (value?: any) => void,
@@ -297,7 +306,7 @@ class PWBHost extends PWBBase {
           resolve(result);
         }
       });
-      this._postMessage(messageToSend);
+      this._postMessage(messageToSend, undefined, transfer);
     };
 
     return new Promise((resolve, reject) => {
@@ -420,17 +429,23 @@ class PWBWorker extends PWBBase {
     }
   }
 
-  _postMessage(obj: any[], targetHostID?: number | undefined) {
+  _postMessage(
+    obj: any[],
+    targetHostID?: number | undefined,
+    transfer?: Transferable[] | undefined
+  ) {
     // console.log('_postMessage', obj, targetHostID);
     if (this._workerType === "SharedWorker") {
       // If targetHostID has been deleted, this will do nothing, which is fine I think
       this._hosts.forEach(({ port }, hostID) => {
         if (targetHostID === undefined || targetHostID === hostID) {
-          port.postMessage(obj);
+          // @ts-expect-error TypeScript thinks transfer can't be undefined
+          port.postMessage(obj, transfer);
         }
       });
     } else if (this._workerType === "Worker") {
-      self.postMessage(obj);
+      // @ts-expect-error TypeScript thinks self is window, which has a different postMessage call signature. In a worker, this is correct.
+      self.postMessage(obj, transfer);
     } else {
       throw new Error("WTF");
     }
@@ -438,7 +453,8 @@ class PWBWorker extends PWBBase {
 
   postMessage(
     userMessage: any,
-    targetHostID?: number | undefined
+    targetHostID?: number | undefined,
+    transfer?: Transferable[] | undefined
   ): Promise<any> {
     // console.log('postMessage', userMessage, targetHostID);
     const actuallyPostMessage = (
@@ -457,7 +473,7 @@ class PWBWorker extends PWBBase {
           resolve(result);
         }
       });
-      this._postMessage(messageToSend, targetHostID);
+      this._postMessage(messageToSend, targetHostID, transfer);
     };
 
     return new Promise((resolve, reject) => {
