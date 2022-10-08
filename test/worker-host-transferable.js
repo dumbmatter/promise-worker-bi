@@ -2,6 +2,10 @@ import assert from "assert";
 import { PWBWorker } from "../dist/esmodules";
 
 const promiseWorker = new PWBWorker();
+promiseWorker.register((buffer) => {
+  assert.equal(buffer.byteLength, 1);
+  return buffer;
+});
 
 (async () => {
   const buffer = new ArrayBuffer(1);
