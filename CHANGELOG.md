@@ -1,4 +1,4 @@
-# v4.1.0, ???
+# v4.1.0, 2022-10-09
 
 Added support for transferable objects in messages and responses from both the host and worker. Example:
 
