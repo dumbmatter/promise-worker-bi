@@ -222,7 +222,7 @@ And this in the second tab:
 
 (If you open main2.js first, "hello host 1" will instead be "hello host 0".)
 
-## Transferable objects
+### Transferable objects
 
 It is possible to [transfer certain types of objects](https://developer.mozilla.org/en-US/docs/Glossary/Transferable_objects) from host to worker or from worker to host. The syntax is similar to how it works with [a normal `postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Worker/postMessage), where an array of the objects to be transferred is added as an additional parameter.
 
