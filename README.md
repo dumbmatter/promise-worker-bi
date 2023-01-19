@@ -303,7 +303,7 @@ The `hostID` parameter is only defined inside a shared worker, in which case it 
 
 The return value of the callback function (shown above as `any`) must resolve to something [structured cloneable](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).
 
-If you want to [transfer an object](https://developer.mozilla.org/en-US/docs/Glossary/Transferable_objects) in the return value of the callback, then the return type should be `{ message: any, transfer: Transferable[] }` rather than just `any`.
+If you want to [transfer an object](https://developer.mozilla.org/en-US/docs/Glossary/Transferable_objects) in the return value of the callback, then the return type should be `{ message: any, _PWB_TRANSFER: Transferable[] }` rather than just `any`.
 
 #### `promiseWorker.postMessage(message: any, hostID?: number, transfer?: Transferable[]): Promise<any>`
 
