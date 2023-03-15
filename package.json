@@ -2,9 +2,15 @@
   "name": "promise-worker-bi",
   "version": "4.1.0",
   "description": "Promise-based messaging for Web Workers and Shared Workers",
-  "main": "dist/commonjs.js",
-  "module": "dist/esmodules.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/commonjs.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/esmodules.mjs",
+      "require": "./dist/commonjs.js"
+    }
+  },
   "scripts": {
     "prepublish": "yarn run build",
     "build": "rm -rf dist && rollup -c && yarn run tsc",

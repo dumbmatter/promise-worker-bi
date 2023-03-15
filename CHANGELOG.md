@@ -1,3 +1,7 @@
+# v4.1.1, 2023-03-15
+
+Fixed the ESM build.
+
 # v4.1.0, 2022-10-09
 
 Added support for transferable objects in messages and responses from both the host and worker. Example:

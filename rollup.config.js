@@ -5,16 +5,16 @@ module.exports = {
   output: [
     {
       file: "dist/commonjs.js",
-      format: "cjs"
+      format: "cjs",
     },
     {
-      file: "dist/esmodules.js",
-      format: "esm"
-    }
+      file: "dist/esmodules.mjs",
+      format: "esm",
+    },
   ],
   plugins: [
     babel({
-      extensions: [".mjs", ".js", ".json", ".node", ".ts", ".tsx"]
-    })
-  ]
+      extensions: [".mjs", ".js", ".json", ".node", ".ts", ".tsx"],
+    }),
+  ],
 };
