@@ -1,19 +1,19 @@
 import assert from "assert";
-import { PWBWorker } from "../dist/esmodules";
+import { PWBWorker } from "../dist/index.js";
 
 const promiseWorker = new PWBWorker();
 promiseWorker.register((buffer) => {
-  assert.equal(buffer.byteLength, 1);
-  return buffer;
+	assert.equal(buffer.byteLength, 1);
+	return buffer;
 });
 
 (async () => {
-  const buffer = new ArrayBuffer(1);
+	const buffer = new ArrayBuffer(1);
 
-  await promiseWorker.postMessage(buffer);
-  assert.equal(buffer.byteLength, 1);
+	await promiseWorker.postMessage(buffer);
+	assert.equal(buffer.byteLength, 1);
 
-  // byteLength goes to 0 when transfered https://developer.chrome.com/blog/transferable-objects-lightning-fast/
-  await promiseWorker.postMessage(buffer, undefined, [buffer]);
-  assert.equal(buffer.byteLength, 0);
+	// byteLength goes to 0 when transfered https://developer.chrome.com/blog/transferable-objects-lightning-fast/
+	await promiseWorker.postMessage(buffer, undefined, [buffer]);
+	assert.equal(buffer.byteLength, 0);
 })();

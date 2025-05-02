@@ -1,7 +1,7 @@
-import { PWBWorker } from "../dist/esmodules";
+import { PWBWorker } from "../dist/index.js";
 
 const promiseWorker = new PWBWorker();
 
 promiseWorker.register((msg, hostID) => {
-  return hostID;
+	return hostID;
 });

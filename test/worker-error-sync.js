@@ -1,6 +1,6 @@
-import { PWBWorker } from "../dist/esmodules";
+import { PWBWorker } from "../dist/index.js";
 
 const promiseWorker = new PWBWorker();
 promiseWorker.register(() => {
-  throw new Error("busted!");
+	throw new Error("busted!");
 });

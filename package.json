@@ -1,75 +1,76 @@
 {
-  "name": "promise-worker-bi",
-  "version": "4.1.1",
-  "description": "Promise-based messaging for Web Workers and Shared Workers",
-  "main": "./dist/commonjs.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/esmodules.mjs",
-      "require": "./dist/commonjs.js"
-    }
-  },
-  "scripts": {
-    "prepublish": "yarn run build",
-    "build": "rm -rf dist && rollup -c && yarn run tsc",
-    "build-test": "yarn run build && node scripts/build-test.js",
-    "lint": "eslint src/*.ts test/*.js scripts/*.js",
-    "prettier": "prettier --write 'src/*.ts' && prettier --write 'test/*.js' && prettier --write 'scripts/*.js'",
-    "karma": "yarn run build-test && karma start",
-    "test": "yarn run tsc && yarn run lint && yarn run karma",
-    "prepare": "husky install"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dumbmatter/promise-worker-bi.git"
-  },
-  "keywords": [
-    "promise",
-    "shared worker",
-    "sharedworker",
-    "web worker",
-    "webworker",
-    "worker"
-  ],
-  "author": "Jeremy Scheff <jdscheff@gmail.com>",
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/dumbmatter/promise-worker-bi/issues"
-  },
-  "homepage": "https://github.com/dumbmatter/promise-worker-bi",
-  "devDependencies": {
-    "@babel/core": "^7.19.3",
-    "@babel/plugin-transform-destructuring": "^7.18.13",
-    "@babel/preset-typescript": "^7.18.6",
-    "@typescript-eslint/eslint-plugin": "^5.39.0",
-    "@typescript-eslint/parser": "^5.39.0",
-    "eslint": "^8.25.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-import": "^2.26.0",
-    "glob": "^8.0.3",
-    "husky": "^8.0.0",
-    "karma": "^6.4.1",
-    "karma-chrome-launcher": "^3.1.1",
-    "karma-firefox-launcher": "^2.1.2",
-    "karma-mocha": "^2.0.1",
-    "karma-mocha-reporter": "^2.2.5",
-    "lint-staged": "^13.0.3",
-    "mocha": "^10.0.0",
-    "prettier": "^2.7.1",
-    "rollup": "^2.79.1",
-    "rollup-plugin-babel": "^4.4.0",
-    "rollup-plugin-node-builtins": "^2.1.2",
-    "rollup-plugin-node-globals": "^1.4.0",
-    "rollup-plugin-node-resolve": "^5.2.0",
-    "typescript": "^4.8.4"
-  },
-  "files": [
-    "dist"
-  ],
-  "lint-staged": {
-    "*.{cjs,js,jsx,mjs,ts,tsx,json,css,md}": "prettier --write"
-  }
+	"name": "promise-worker-bi",
+	"version": "4.1.1",
+	"description": "Promise-based messaging for Web Workers and Shared Workers",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"type": "module",
+	"scripts": {
+		"prepublish": "node --run build",
+		"build": "rm -rf dist && rollup -c && tsc --emitDeclarationOnly",
+		"build-test": "node --run build && node scripts/build-test.js",
+		"lint": "eslint .",
+		"prettier": "prettier --write 'src/*.ts' && prettier --write 'test/*.js' && prettier --write 'scripts/*.js'",
+		"karma": "node --run build-test && karma start",
+		"test": "tsc --noEmit && node --run lint && node --run karma",
+		"prepare": "husky"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/dumbmatter/promise-worker-bi.git"
+	},
+	"keywords": [
+		"promise",
+		"shared worker",
+		"sharedworker",
+		"web worker",
+		"webworker",
+		"worker"
+	],
+	"author": "Jeremy Scheff <jdscheff@gmail.com>",
+	"license": "Apache-2.0",
+	"bugs": {
+		"url": "https://github.com/dumbmatter/promise-worker-bi/issues"
+	},
+	"homepage": "https://github.com/dumbmatter/promise-worker-bi",
+	"devDependencies": {
+		"@babel/core": "^7.19.3",
+		"@babel/plugin-transform-destructuring": "^7.18.13",
+		"@babel/preset-typescript": "^7.18.6",
+		"@eslint/js": "^9.25.1",
+		"@rollup/plugin-babel": "^6.0.4",
+		"@rollup/plugin-node-resolve": "^16.0.1",
+		"@typescript-eslint/eslint-plugin": "^8.31.1",
+		"@typescript-eslint/parser": "^8.31.1",
+		"eslint": "^9.25.1",
+		"eslint-plugin-import-x": "^4.11.0",
+		"globals": "^16.0.0",
+		"husky": "^9.1.7",
+		"karma": "^6.4.1",
+		"karma-chrome-launcher": "^3.1.1",
+		"karma-firefox-launcher": "^2.1.2",
+		"karma-mocha": "^2.0.1",
+		"karma-mocha-reporter": "^2.2.5",
+		"lint-staged": "^15.5.1",
+		"mocha": "^11.2.2",
+		"prettier": "^3.5.3",
+		"rollup": "^4.40.1",
+		"rollup-plugin-node-builtins": "^2.1.2",
+		"rollup-plugin-node-globals": "^1.4.0",
+		"tinyglobby": "^0.2.13",
+		"typescript": "^5.8.3",
+		"typescript-eslint": "^8.31.1"
+	},
+	"files": [
+		"dist"
+	],
+	"lint-staged": {
+		"*.{js,cjs,mjs,jsx,json,scss,ts,cts,mts,tsx}": "prettier --write"
+	}
 }
