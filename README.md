@@ -8,7 +8,7 @@ This is based on [promise-worker](https://github.com/nolanlawson/promise-worker)
 
 Install:
 
-    yarn add promise-worker-bi
+    npm install promise-worker-bi
 
 Inside your main bundle:
 
