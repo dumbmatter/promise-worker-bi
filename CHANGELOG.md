@@ -1,3 +1,7 @@
+# v5.0.0, 2025-05-02
+
+Modernize codebase, require Node.js 20+, drop CommonJS build.
+
 # v4.1.1, 2023-03-15
 
 Fixed the ESM build.
