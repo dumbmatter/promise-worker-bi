@@ -1,3 +1,7 @@
+# v5.0.1, 2025-05-02
+
+Fix export
+
 # v5.0.0, 2025-05-02
 
 Modernize codebase, require Node.js 20+, drop CommonJS build.
