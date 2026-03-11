@@ -1,6 +1,6 @@
 import globals from "globals";
 import eslint from "@eslint/js";
-import tseslint from "typescript-eslint"; // eslint-disable-line import-x/no-unresolved
+import tseslint from "typescript-eslint";
 import * as pluginImportX from "eslint-plugin-import-x";
 
 export default tseslint.config(
