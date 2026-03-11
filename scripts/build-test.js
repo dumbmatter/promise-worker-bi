@@ -1,22 +1,15 @@
-import path from "path";
+import { glob } from "node:fs/promises";
+import path from "node:path";
 import { rollup } from "rollup";
 import builtins from "rollup-plugin-node-builtins";
-import globals from "rollup-plugin-node-globals";
 import resolve from "@rollup/plugin-node-resolve";
-import { glob } from "tinyglobby";
 
-const files = await glob("test/*.js");
+const files = glob("test/*.js");
 
-for (const file of files) {
+for await (const file of files) {
 	const bundle = await rollup({
 		input: file,
-		plugins: [
-			resolve({
-				preferBuiltins: true,
-			}),
-			globals(),
-			builtins(),
-		],
+		plugins: [resolve(), builtins()],
 	});
 
 	await bundle.write({

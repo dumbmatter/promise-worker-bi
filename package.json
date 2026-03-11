@@ -61,8 +61,6 @@
 		"prettier": "^3.8.1",
 		"rollup": "^4.59.0",
 		"rollup-plugin-node-builtins": "^2.1.2",
-		"rollup-plugin-node-globals": "^1.4.0",
-		"tinyglobby": "^0.2.15",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.56.1"
 	},
