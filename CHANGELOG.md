@@ -1,3 +1,7 @@
+# v5.0.2, 2026-03-11
+
+Don't include tests with npm package, which significantly reduces its size.
+
 # v5.0.1, 2025-05-02
 
 Fix export
