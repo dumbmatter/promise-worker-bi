@@ -278,6 +278,18 @@ abstract class PWBBase {
 	}
 }
 
+// This used to be `worker instanceof Worker` but I have recieved reports that in some weird cases, Safari will
+// inappropriately return false for that, even in obvious cases like:
+//
+//     blob = new Blob(["self.onmessage = function() {};"], { type: "text/javascript" });
+//     worker = new Worker(window.URL.createObjectURL(blob));
+//     console.log(worker instanceof Worker);
+//
+// So instead, let's do this test for worker.port which only exists on shared workers.
+const isSharedWorker = (worker: SharedWorker | Worker): worker is SharedWorker => {
+	return (worker as SharedWorker).port !== undefined;
+};
+
 class PWBHost extends PWBBase {
 	_errorCallback: ErrorCallback | undefined;
 
@@ -290,27 +302,14 @@ class PWBHost extends PWBBase {
 	constructor(worker: SharedWorker | Worker) {
 		super();
 
-		// The following if statement used to check `worker instanceof Worker` but I have recieved
-		// reports that in some weird cases, Safari will inappropriately return false for that, even
-		// in obvious cases like:
-		//
-		//     blob = new Blob(["self.onmessage = function() {};"], { type: "text/javascript" });
-		//     worker = new Worker(window.URL.createObjectURL(blob));
-		//     console.log(worker instanceof Worker);
-		//
-		// So instead, let's do this test for worker.port which only exists on shared workers.
-		// @ts-expect-error
-		if (worker.port === undefined) {
+		if (!isSharedWorker(worker)) {
 			this._workerType = "Worker";
 
-			// @ts-expect-error
 			worker.addEventListener("message", this._onMessage);
 		} else {
 			this._workerType = "SharedWorker";
 
-			// @ts-expect-error - it doesn't know if _worker is Worker or SharedWorker, but I do
 			worker.port.addEventListener("message", this._onMessage);
-			// @ts-expect-error - it doesn't know if _worker is Worker or SharedWorker, but I do
 			worker.port.start();
 
 			// Handle tab close. This isn't perfect, but there is no perfect method
