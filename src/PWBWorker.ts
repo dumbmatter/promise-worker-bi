@@ -11,12 +11,11 @@ import {
 } from "./message.ts";
 import { logError, PWBBase } from "./PWBBase.ts";
 
-let messageIDs = 0;
+let nextMessageID = 0;
 
 export class PWBWorker extends PWBBase {
-	_hosts: Map<number, { port: MessagePort }>;
-
-	_maxHostID: number;
+	private _hosts: Map<number, { port: MessagePort }>;
+	private _maxHostID: number;
 
 	constructor() {
 		super();
@@ -75,7 +74,7 @@ export class PWBWorker extends PWBBase {
 		}
 	}
 
-	_postMessage(
+	protected _postMessage(
 		message: QueryMessage | ResponseMessage | HostIdMessage | WorkerErrorMessage,
 		targetHostID?: number | undefined,
 		transfer?: Transferable[] | undefined,
@@ -107,8 +106,8 @@ export class PWBWorker extends PWBBase {
 			resolve: (value?: unknown) => void,
 			reject: (reason?: unknown) => void,
 		) => {
-			const messageID = messageIDs;
-			messageIDs += 1;
+			const messageID = nextMessageID;
+			nextMessageID += 1;
 
 			const messageToSend: QueryMessage = [MSGTYPE_QUERY, messageID, userMessage];
 
@@ -127,7 +126,7 @@ export class PWBWorker extends PWBBase {
 		});
 	}
 
-	_onMessage(e: MessageEvent) {
+	private _onMessage(e: MessageEvent) {
 		const message = this._onMessageCommon(e);
 		if (!message) {
 			return;

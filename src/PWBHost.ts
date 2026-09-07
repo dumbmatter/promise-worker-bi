@@ -10,8 +10,6 @@ import {
 } from "./message.ts";
 import { PWBBase } from "./PWBBase.ts";
 
-let messageIDs = 0;
-
 type ErrorCallback = (a: Error) => void;
 
 // This used to be `worker instanceof Worker` but I have recieved reports that in some weird cases, Safari will
@@ -26,14 +24,13 @@ const isSharedWorker = (worker: SharedWorker | Worker): worker is SharedWorker =
 	return (worker as SharedWorker).port !== undefined;
 };
 
+let nextMessageID = 0;
+
 export class PWBHost extends PWBBase {
-	_errorCallback: ErrorCallback | undefined;
-
-	_hostID: number | undefined; // Only defined on host
-
-	_hostIDQueue: (() => void)[] | undefined;
-
-	_worker: SharedWorker | Worker;
+	private _errorCallback: ErrorCallback | undefined;
+	private _hostID: number | undefined; // Only defined on host
+	private _hostIDQueue: (() => void)[] | undefined;
+	private _worker: SharedWorker | Worker;
 
 	constructor(worker: SharedWorker | Worker) {
 		super();
@@ -76,7 +73,7 @@ export class PWBHost extends PWBBase {
 		});
 	}
 
-	_postMessage(
+	protected _postMessage(
 		obj: QueryMessage | ResponseMessage | HostCloseMessage,
 		_hostID?: unknown,
 		transfer?: Transferable[] | undefined,
@@ -103,8 +100,8 @@ export class PWBHost extends PWBBase {
 			resolve: (value?: unknown) => void,
 			reject: (reason?: unknown) => void,
 		) => {
-			const messageID = messageIDs;
-			messageIDs += 1;
+			const messageID = nextMessageID;
+			nextMessageID += 1;
 
 			const messageToSend: QueryMessage = [MSGTYPE_QUERY, messageID, userMessage, this._hostID];
 
@@ -131,7 +128,7 @@ export class PWBHost extends PWBBase {
 		});
 	}
 
-	_onMessage(e: MessageEvent) {
+	private _onMessage(e: MessageEvent) {
 		const message = this._onMessageCommon(e);
 		if (!message) {
 			return;

@@ -22,11 +22,9 @@ export const logError = (err: Error) => {
 };
 
 export abstract class PWBBase {
-	_callbacks: Map<number, (a: Error | null, b: unknown) => void>;
-
-	_queryCallback: QueryCallback;
-
-	_workerType: "SharedWorker" | "Worker" | undefined;
+	protected _callbacks: Map<number, (a: Error | null, b: unknown) => void>;
+	protected _queryCallback: QueryCallback;
+	protected _workerType: "SharedWorker" | "Worker" | undefined;
 
 	constructor() {
 		// console.log('constructor', worker);
@@ -44,13 +42,13 @@ export abstract class PWBBase {
 	}
 
 	// From worker, 2nd param could be hostID if sending to specific host. From either, 3rd param could be an array of transferable objects
-	abstract _postMessage(
+	protected abstract _postMessage(
 		obj: Message,
 		hostID?: number | undefined,
 		transfer?: Transferable[] | undefined,
 	): void;
 
-	_postResponse(
+	private _postResponse(
 		messageID: number,
 		error: Error | null,
 		result?: unknown,
@@ -80,7 +78,7 @@ export abstract class PWBBase {
 		}
 	}
 
-	_handleQuery(message: QueryMessage) {
+	private _handleQuery(message: QueryMessage) {
 		const messageID = message[1];
 		const query = message[2];
 		const hostID = message[3];
@@ -105,8 +103,7 @@ export abstract class PWBBase {
 		}
 	}
 
-	// Either return messageID and type if further processing is needed, or undefined otherwise
-	_onMessageCommon(e: MessageEvent) {
+	protected _onMessageCommon(e: MessageEvent) {
 		// console.log('_onMessageCommon', e.data);
 		const message = parseMessage(e.data);
 		if (!message) {
