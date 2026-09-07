@@ -17,32 +17,20 @@ const isFakeError = (x: unknown): x is FakeError => {
 
 	const candidate = x as Record<string, unknown>;
 
-	if (
-		typeof candidate.name !== "string" ||
-		typeof candidate.message !== "string"
-	) {
+	if (typeof candidate.name !== "string" || typeof candidate.message !== "string") {
 		return false;
 	}
 
 	if (candidate.stack !== undefined && typeof candidate.stack !== "string") {
 		return false;
 	}
-	if (
-		candidate.fileName !== undefined &&
-		typeof candidate.fileName !== "string"
-	) {
+	if (candidate.fileName !== undefined && typeof candidate.fileName !== "string") {
 		return false;
 	}
-	if (
-		candidate.columnNumber !== undefined &&
-		typeof candidate.columnNumber !== "number"
-	) {
+	if (candidate.columnNumber !== undefined && typeof candidate.columnNumber !== "number") {
 		return false;
 	}
-	if (
-		candidate.lineNumber !== undefined &&
-		typeof candidate.lineNumber !== "number"
-	) {
+	if (candidate.lineNumber !== undefined && typeof candidate.lineNumber !== "number") {
 		return false;
 	}
 
@@ -212,10 +200,7 @@ abstract class PWBBase {
 		if (error) {
 			logError(error);
 
-			this._postMessage(
-				[MSGTYPE_RESPONSE, messageID, toFakeError(error)],
-				hostID,
-			);
+			this._postMessage([MSGTYPE_RESPONSE, messageID, toFakeError(error)], hostID);
 		} else {
 			// Hackily identify when message contains transferable objects
 			if (
@@ -274,8 +259,7 @@ abstract class PWBBase {
 		}
 		if (message[0] === MSGTYPE_RESPONSE) {
 			const messageID = message[1];
-			const error: Error | null =
-				message[2] === null ? null : fromFakeError(message[2]);
+			const error: Error | null = message[2] === null ? null : fromFakeError(message[2]);
 
 			const callback = this._callbacks.get(messageID);
 
@@ -387,12 +371,7 @@ class PWBHost extends PWBBase {
 			const messageID = messageIDs;
 			messageIDs += 1;
 
-			const messageToSend: QueryMessage = [
-				MSGTYPE_QUERY,
-				messageID,
-				userMessage,
-				this._hostID,
-			];
+			const messageToSend: QueryMessage = [MSGTYPE_QUERY, messageID, userMessage, this._hostID];
 
 			this._callbacks.set(messageID, (error, result) => {
 				if (error) {
@@ -469,9 +448,7 @@ class PWBWorker extends PWBBase {
 			self.addEventListener("connect", (e) => {
 				// @ts-expect-error
 				const port = e.ports[0];
-				port.addEventListener("message", (e2: MessageEvent) =>
-					this._onMessage(e2),
-				);
+				port.addEventListener("message", (e2: MessageEvent) => this._onMessage(e2));
 				port.start();
 
 				this._maxHostID += 1;
@@ -489,10 +466,7 @@ class PWBWorker extends PWBBase {
 				const hostID = this._hosts.keys().next().value;
 
 				if (hostID !== undefined) {
-					this._postMessage(
-						[MSGTYPE_WORKER_ERROR, toFakeError(e.error)],
-						hostID,
-					);
+					this._postMessage([MSGTYPE_WORKER_ERROR, toFakeError(e.error)], hostID);
 				}
 			});
 		} else {
@@ -514,11 +488,7 @@ class PWBWorker extends PWBBase {
 	}
 
 	_postMessage(
-		message:
-			| QueryMessage
-			| ResponseMessage
-			| HostIdMessage
-			| WorkerErrorMessage,
+		message: QueryMessage | ResponseMessage | HostIdMessage | WorkerErrorMessage,
 		targetHostID?: number | undefined,
 		transfer?: Transferable[] | undefined,
 	) {
@@ -552,11 +522,7 @@ class PWBWorker extends PWBBase {
 			const messageID = messageIDs;
 			messageIDs += 1;
 
-			const messageToSend: QueryMessage = [
-				MSGTYPE_QUERY,
-				messageID,
-				userMessage,
-			];
+			const messageToSend: QueryMessage = [MSGTYPE_QUERY, messageID, userMessage];
 
 			this._callbacks.set(messageID, (error, result) => {
 				if (error) {
