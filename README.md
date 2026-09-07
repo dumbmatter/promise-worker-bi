@@ -1,4 +1,10 @@
-# promise-worker-bi [![Build Status](https://travis-ci.org/dumbmatter/promise-worker-bi.svg?branch=master)](https://travis-ci.org/dumbmatter/promise-worker-bi)
+# promise-worker-bi
+
+[![Build Status](https://github.com/dumbmatter/promise-worker-bi/actions/workflows/nodejs.yml/badge.svg)](https://github.com/dumbmatter/promise-worker-bi/actions/workflows/nodejs.yml)
+[![GitHub Repo stars](https://img.shields.io/github/stars/dumbmatter/promise-worker-bi)](https://github.com/dumbmatter/promise-worker-bi)
+[![GitHub](https://img.shields.io/github/license/dumbmatter/promise-worker-bi)](https://github.com/dumbmatter/promise-worker-bi)
+[![npm](https://img.shields.io/npm/v/promise-worker-bi)](https://www.npmjs.com/package/promise-worker-bi)
+[![npm](https://img.shields.io/npm/dm/promise-worker-bi)](https://www.npmjs.com/package/promise-worker-bi)
 
 A small (~2 kB min+gz) and performant library for communicating with web workers and shared workers, using promises. Post a message from the browser to the worker, get a promise that resolves to the response. Post a message from the worker to the browser, get a promise that resolves to the response. And with shared workers, you can either broadcast to all browser tabs or send a message to a specific tab.
 
