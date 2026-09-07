@@ -1,12 +1,11 @@
 import globals from "globals";
 import eslint from "@eslint/js";
+import { defineConfig, globalIgnores } from "eslint/config";
 import tseslint from "typescript-eslint";
 import * as pluginImportX from "eslint-plugin-import-x";
 
-export default tseslint.config(
-	{
-		ignores: ["dist"],
-	},
+export default defineConfig(
+	globalIgnores(["dist"]),
 	{ files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"] },
 	{
 		languageOptions: {
@@ -20,15 +19,6 @@ export default tseslint.config(
 		rules: {
 			"@typescript-eslint/no-explicit-any": "off",
 			"@typescript-eslint/ban-ts-comment": "off",
-		},
-	},
-	{
-		files: ["scripts/*"],
-
-		languageOptions: {
-			globals: {
-				...globals.node,
-			},
 		},
 	},
 );
