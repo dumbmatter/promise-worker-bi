@@ -1,10 +1,10 @@
-import assert from "assert";
+import { assert } from "vitest";
 import { PWBWorker } from "../dist/index.js";
 
 const promiseWorker = new PWBWorker();
 
 promiseWorker.postMessage("foo").then(
-	/* istanbul ignore next */ () => {
+	() => {
 		throw new Error("expected an error here");
 	},
 	(err) => {

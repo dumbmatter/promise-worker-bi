@@ -1,4 +1,4 @@
-import assert from "assert";
+import { assert } from "vitest";
 import { PWBWorker } from "../dist/index.js";
 
 const promiseWorker = new PWBWorker();
