@@ -13,7 +13,7 @@
 	"type": "module",
 	"scripts": {
 		"prepack": "node --run build",
-		"build": "rm -rf dist && rollup -c && tsc --emitDeclarationOnly",
+		"build": "tsdown",
 		"lint": "node --run build && tsc --noEmit && eslint .",
 		"prettier": "prettier --write 'src/*.ts' && prettier --write 'test/*.js' && prettier --write 'scripts/*.js'",
 		"test": "node --run build && vitest run",
@@ -38,11 +38,7 @@
 	},
 	"homepage": "https://github.com/dumbmatter/promise-worker-bi",
 	"devDependencies": {
-		"@babel/core": "^7.29.7",
-		"@babel/preset-typescript": "^7.29.7",
 		"@eslint/js": "^10.0.1",
-		"@rollup/plugin-babel": "^7.1.0",
-		"@rollup/plugin-node-resolve": "^16.0.3",
 		"@typescript-eslint/eslint-plugin": "^8.69.0",
 		"@typescript-eslint/parser": "^8.69.0",
 		"@vitest/browser-playwright": "^5.0.0",
@@ -53,7 +49,7 @@
 		"lint-staged": "^17.5.0",
 		"oxfmt": "^0.66.0",
 		"playwright": "^1.63.0",
-		"rollup": "^4.63.1",
+		"tsdown": "^0.23.0",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.69.0",
 		"vitest": "^5.0.0"
