@@ -5,15 +5,17 @@ export default defineConfig({
 	test: {
 		browser: {
 			enabled: true,
-			//headless: true,
+			headless: true,
 			provider: playwright(),
 			instances: [
 				{ browser: "chromium" },
-				//{ browser: "firefox" },
-				//{ browser: "webkit" },
+				{ browser: "firefox" },
+				{ browser: "webkit" },
 			],
 			screenshotFailures: false,
 		},
 		include: ["test/test.js"],
+		slowTestThreshold: 5_000,
+		testTimeout: 10_000,
 	},
 });

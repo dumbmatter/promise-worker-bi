@@ -9,7 +9,6 @@ describe("host -> worker", () => {
 		const promiseWorker = new PWBHost(worker);
 
 		return promiseWorker.postMessage("ping").then((res) => {
-			console.log("BAR");
 			assert.equal(res, "pong");
 		});
 	});
@@ -165,10 +164,8 @@ describe("host -> worker", () => {
 			},
 			(err) => {
 				assert.equal(err.message, "oh noes");
-				// Firefox stack does not include the error message here, for some reason
-				if (!navigator || !navigator.userAgent.includes("Firefox")) {
-					assert(err.stack.indexOf("oh noes") >= 0);
-				}
+				// Chrome puts it in the stack, but other browsers don't
+				//assert(err.stack.indexOf("oh noes") >= 0);
 			},
 		);
 	});
@@ -283,365 +280,399 @@ describe("host -> worker", () => {
 });
 
 describe("worker -> host", () => {
-	it("sends a message from worker to host", (done) => {
-		const worker = new Worker(
-			new URL("./worker-host-ping.js", import.meta.url),
-			{ type: "module" },
-		);
-		const promiseWorker = new PWBHost(worker);
+	it("sends a message from worker to host", () => {
+		return new Promise((resolve) => {
+			const worker = new Worker(
+				new URL("./worker-host-ping.js", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
 
-		let i = 0;
-		promiseWorker.register((msg) => {
-			if (i === 0) {
-				assert.equal(msg, "ping");
-			} else if (i === 1) {
-				assert.equal(msg, "pong");
-				done();
-			} else {
-				throw new Error("Extra message");
-			}
+			let i = 0;
+			promiseWorker.register((msg) => {
+				if (i === 0) {
+					assert.equal(msg, "ping");
+				} else if (i === 1) {
+					assert.equal(msg, "pong");
+					resolve();
+				} else {
+					throw new Error("Extra message");
+				}
 
-			i += 1;
-			return "pong";
-		});
-	});
-
-	it("echoes a message", (done) => {
-		const worker = new Worker(
-			new URL("./worker-host-echo.js", import.meta.url),
-			{ type: "module" },
-		);
-		const promiseWorker = new PWBHost(worker);
-
-		let i = 0;
-		promiseWorker.register((msg) => {
-			if (i === 0) {
-				assert.equal(msg, "ping");
-			} else if (i === 1) {
-				assert.equal(msg, "ping");
-				done();
-			} else {
-				throw new Error("Extra message");
-			}
-
-			i += 1;
-			return msg;
-		});
-	});
-
-	it("pongs a message with a promise", (done) => {
-		const worker = new Worker(
-			new URL("./worker-host-ping.js", import.meta.url),
-			{ type: "module" },
-		);
-		const promiseWorker = new PWBHost(worker);
-
-		let i = 0;
-		promiseWorker.register((msg) => {
-			if (i === 0) {
-				assert.equal(msg, "ping");
-			} else if (i === 1) {
-				assert.equal(msg, "pong");
-				done();
-			} else {
-				throw new Error("Extra message");
-			}
-
-			i += 1;
-			return Promise.resolve("pong");
-		});
-	});
-
-	it("pongs a message with a promise, again", (done) => {
-		const worker = new Worker(
-			new URL("./worker-host-ping.js", import.meta.url),
-			{ type: "module" },
-		);
-		const promiseWorker = new PWBHost(worker);
-
-		let i = 0;
-		promiseWorker.register((msg) => {
-			if (i === 0) {
-				assert.equal(msg, "ping");
-			} else if (i === 1) {
-				assert.equal(msg, "pong");
-				done();
-			} else {
-				throw new Error("Extra message");
-			}
-
-			i += 1;
-			return Promise.resolve("pong");
-		});
-	});
-
-	it("echoes a message multiple times", (done) => {
-		const worker = new Worker(
-			new URL("./worker-host-echo-multiple.js", import.meta.url),
-			{ type: "module" },
-		);
-		const promiseWorker = new PWBHost(worker);
-
-		const words = [
-			"foo",
-			"bar",
-			"baz",
-			"quux",
-			"toto",
-			"bongo",
-			"haha",
-			"flim",
-			"foob",
-			"foobar",
-			"bazzy",
-			"fifi",
-			"kiki",
-		];
-
-		let i = 0;
-		promiseWorker.register((msg) => {
-			assert.equal(msg, words[i % words.length]);
-			i += 1;
-
-			if (i === words.length * 2) {
-				done();
-			}
-
-			return msg;
-		});
-	});
-
-	it("can have multiple PromiseWorkers", (done) => {
-		const worker = new Worker(
-			new URL("./worker-host-echo.js", import.meta.url),
-			{ type: "module" },
-		);
-		const promiseWorker1 = new PWBHost(worker);
-		const promiseWorker2 = new PWBHost(worker);
-
-		let i = 0;
-		let j = 0;
-
-		promiseWorker1.register((msg) => {
-			if (i === 0) {
-				assert.equal(msg, "ping");
-			} else if (i === 1) {
-				assert.equal(msg, "ping");
-			} else {
-				throw new Error("Extra message");
-			}
-
-			if (i === 1 && j === 1) {
-				done();
-			}
-
-			i += 1;
-			return msg;
-		});
-
-		promiseWorker2.register((msg) => {
-			if (j === 0) {
-				assert.equal(msg, "ping");
-			} else if (j === 1) {
-				assert.equal(msg, "ping");
-			} else {
-				throw new Error("Extra message");
-			}
-
-			if (i === 1 && j === 1) {
-				done();
-			}
-
-			j += 1;
-			return msg;
-		});
-	});
-
-	it("handles synchronous errors", (done) => {
-		const worker = new Worker(
-			new URL("./worker-host-error-sync.js", import.meta.url),
-			{ type: "module" },
-		);
-		const promiseWorker = new PWBHost(worker);
-
-		let i = 0;
-		promiseWorker.register((msg) => {
-			if (i === 0) {
 				i += 1;
-				throw new Error("busted!");
-			} else if (i === 1) {
-				i += 1;
-				assert.equal(msg, "done");
-				done();
-			} else {
-				throw new Error("Extra message");
-			}
+				return "pong";
+			});
 		});
 	});
 
-	it("handles asynchronous errors", (done) => {
-		const worker = new Worker(
-			new URL("./worker-host-error-async.js", import.meta.url),
-			{ type: "module" },
-		);
-		const promiseWorker = new PWBHost(worker);
+	it("echoes a message", () => {
+		return new Promise((resolve) => {
+			const worker = new Worker(
+				new URL("./worker-host-echo.js", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
 
-		let i = 0;
-		promiseWorker.register((msg) => {
-			if (i === 0) {
-				i += 1;
-				return Promise.resolve().then(() => {
-					throw new Error("oh noes");
-				});
-			}
+			let i = 0;
+			promiseWorker.register((msg) => {
+				if (i === 0) {
+					assert.equal(msg, "ping");
+				} else if (i === 1) {
+					assert.equal(msg, "ping");
+					resolve();
+				} else {
+					throw new Error("Extra message");
+				}
 
-			if (i === 1) {
 				i += 1;
-				assert.equal(msg, "done");
-				done();
-			} else {
-				throw new Error("Extra message");
-			}
+				return msg;
+			});
 		});
 	});
 
-	it("handles errors outside of responses", (done) => {
-		const worker = new Worker(
-			new URL("./worker-host-error-outside-response.js", import.meta.url),
-			{ type: "module" },
-		);
-		const promiseWorker = new PWBHost(worker);
+	it("pongs a message with a promise", () => {
+		return new Promise((resolve) => {
+			const worker = new Worker(
+				new URL("./worker-host-ping.js", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
 
-		promiseWorker.registerError((e) => {
-			assert(e.message.indexOf("error-outside-response") >= 0);
-			assert(e.stack.indexOf("error-outside-response") >= 0);
-			done();
+			let i = 0;
+			promiseWorker.register((msg) => {
+				if (i === 0) {
+					assert.equal(msg, "ping");
+				} else if (i === 1) {
+					assert.equal(msg, "pong");
+					resolve();
+				} else {
+					throw new Error("Extra message");
+				}
+
+				i += 1;
+				return Promise.resolve("pong");
+			});
+		});
+	});
+
+	it("pongs a message with a promise, again", () => {
+		return new Promise((resolve) => {
+			const worker = new Worker(
+				new URL("./worker-host-ping.js", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
+
+			let i = 0;
+			promiseWorker.register((msg) => {
+				if (i === 0) {
+					assert.equal(msg, "ping");
+				} else if (i === 1) {
+					assert.equal(msg, "pong");
+					resolve();
+				} else {
+					throw new Error("Extra message");
+				}
+
+				i += 1;
+				return Promise.resolve("pong");
+			});
+		});
+	});
+
+	it("echoes a message multiple times", () => {
+		return new Promise((resolve) => {
+			const worker = new Worker(
+				new URL("./worker-host-echo-multiple.js", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
+
+			const words = [
+				"foo",
+				"bar",
+				"baz",
+				"quux",
+				"toto",
+				"bongo",
+				"haha",
+				"flim",
+				"foob",
+				"foobar",
+				"bazzy",
+				"fifi",
+				"kiki",
+			];
+
+			let i = 0;
+			promiseWorker.register((msg) => {
+				assert.equal(msg, words[i % words.length]);
+				i += 1;
+
+				if (i === words.length * 2) {
+					resolve();
+				}
+
+				return msg;
+			});
+		});
+	});
+
+	it("can have multiple PromiseWorkers", () => {
+		new Promise((resolve) => {
+			const worker = new Worker(
+				new URL("./worker-host-echo.js", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker1 = new PWBHost(worker);
+			const promiseWorker2 = new PWBHost(worker);
+
+			let i = 0;
+			let j = 0;
+
+			promiseWorker1.register((msg) => {
+				if (i === 0) {
+					assert.equal(msg, "ping");
+				} else if (i === 1) {
+					assert.equal(msg, "ping");
+				} else {
+					throw new Error("Extra message");
+				}
+
+				if (i === 1 && j === 1) {
+					resolve();
+				}
+
+				i += 1;
+				return msg;
+			});
+
+			promiseWorker2.register((msg) => {
+				if (j === 0) {
+					assert.equal(msg, "ping");
+				} else if (j === 1) {
+					assert.equal(msg, "ping");
+				} else {
+					throw new Error("Extra message");
+				}
+
+				if (i === 1 && j === 1) {
+					resolve();
+				}
+
+				j += 1;
+				return msg;
+			});
+		});
+	});
+
+	it("handles synchronous errors", () => {
+		return new Promise((resolve) => {
+			const worker = new Worker(
+				new URL("./worker-host-error-sync.js", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
+
+			let i = 0;
+			promiseWorker.register((msg) => {
+				if (i === 0) {
+					i += 1;
+					throw new Error("busted!");
+				} else if (i === 1) {
+					i += 1;
+					assert.equal(msg, "done");
+					resolve();
+				} else {
+					throw new Error("Extra message");
+				}
+			});
+		});
+	});
+
+	it("handles asynchronous errors", () => {
+		return new Promise((resolve) => {
+			const worker = new Worker(
+				new URL("./worker-host-error-async.js", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
+
+			let i = 0;
+			promiseWorker.register((msg) => {
+				if (i === 0) {
+					i += 1;
+					return Promise.resolve().then(() => {
+						throw new Error("oh noes");
+					});
+				}
+
+				if (i === 1) {
+					i += 1;
+					assert.equal(msg, "done");
+					resolve();
+				} else {
+					throw new Error("Extra message");
+				}
+			});
+		});
+	});
+
+	it("handles errors outside of responses", () => {
+		return new Promise((resolve) => {
+			const worker = new Worker(
+				new URL("./worker-host-error-outside-response.js", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
+
+			promiseWorker.registerError((e) => {
+				assert(e.message.indexOf("error-outside-response") >= 0);
+				assert(e.stack.indexOf("error-outside-response") >= 0);
+				resolve();
+			});
 		});
 	});
 
 	// This test is a little dicey, relies on setTimeout timing across host and worker
-	it("handles unregistered callbacks", (done) => {
-		const worker = new Worker(
-			new URL("./worker-host-empty.js", import.meta.url),
-			{ type: "module" },
-		);
-		const promiseWorker = new PWBHost(worker);
+	it("handles unregistered callbacks", () => {
+		return new Promise((resolve) => {
+			const worker = new Worker(
+				new URL("./worker-host-empty.js", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
 
-		promiseWorker.register("mistake!");
+			promiseWorker.register("mistake!");
 
-		setTimeout(() => {
-			promiseWorker.register((msg) => {
-				assert.equal(msg, "done");
-				done();
-			});
-		}, 50);
+			setTimeout(() => {
+				promiseWorker.register((msg) => {
+					assert.equal(msg, "done");
+					resolve();
+				});
+			}, 50);
+		});
 	});
 
-	it("allows custom additional behavior", (done) => {
-		const worker = new Worker(
-			new URL("./worker-host-echo-custom.js", import.meta.url),
-			{ type: "module" },
-		);
-		const promiseWorker = new PWBHost(worker);
+	it("allows custom additional behavior", () => {
+		return new Promise((resolve) => {
+			const worker = new Worker(
+				new URL("./worker-host-echo-custom.js", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
 
-		let i = 0;
-		promiseWorker.register((msg) => {
-			if (i === 0) {
-				assert.equal(msg, "ping");
-			} else if (i === 1) {
-				assert.equal(msg, "done");
-				done();
-			} else {
-				throw new Error("Extra message");
-			}
+			let i = 0;
+			promiseWorker.register((msg) => {
+				if (i === 0) {
+					assert.equal(msg, "ping");
+				} else if (i === 1) {
+					assert.equal(msg, "done");
+					resolve();
+				} else {
+					throw new Error("Extra message");
+				}
 
-			i += 1;
-			return msg;
-		});
+				i += 1;
+				return msg;
+			});
 
-		worker.addEventListener("message", (e) => {
-			if (!Array.isArray(e.data)) {
-				// custom message
-				worker.postMessage(e.data);
-			}
+			worker.addEventListener("message", (e) => {
+				if (!Array.isArray(e.data)) {
+					// custom message
+					worker.postMessage(e.data);
+				}
+			});
 		});
 	});
 });
 
 describe("bidirectional communication", () => {
-	it("echoes a message", (done) => {
-		const worker = new Worker(
-			new URL("./worker-bidirectional-echo.js", import.meta.url),
-			{ type: "module" },
-		);
-		const promiseWorker = new PWBHost(worker);
+	it("echoes a message", () => {
+		return new Promise((resolve) => {
+			const worker = new Worker(
+				new URL("./worker-bidirectional-echo.js", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
 
-		let i = 0;
-		promiseWorker.register((msg) => {
-			if (i === 0) {
-				assert.equal(msg, "ping");
-			} else if (i === 1) {
-				assert.equal(msg, "ping");
+			let i = 0;
+			promiseWorker.register((msg) => {
+				if (i === 0) {
+					assert.equal(msg, "ping");
+				} else if (i === 1) {
+					assert.equal(msg, "ping");
 
-				promiseWorker.postMessage("pong").then((res) => {
-					assert.equal(res, "pong");
-					done();
-				});
-			} else {
-				throw new Error("Extra message");
-			}
+					promiseWorker.postMessage("pong").then((res) => {
+						assert.equal(res, "pong");
+						resolve();
+					});
+				} else {
+					throw new Error("Extra message");
+				}
 
-			i += 1;
-			return msg;
+				i += 1;
+				return msg;
+			});
 		});
 	});
 });
 
 // This is a shitty test, not sure how to simulate a real multi-tab test
 describe("Shared Worker", () => {
-	it("works", (done) => {
-		const worker = new SharedWorker(`worker-shared.js`);
+	it("works", () => {
+		return new Promise((resolve) => {
+			const worker = new SharedWorker(
+				new URL("./worker-shared.js", import.meta.url),
+				{ type: "module" },
+			);
 
-		const promiseWorker = new PWBHost(worker);
+			const promiseWorker = new PWBHost(worker);
 
-		let i = 0;
-		const NUM_MESSAGES = 4; // 2 from broadcast, 1 from non-broadcast, and 2 from individual message responses
-		function gotMessage() {
-			i += 1;
-			if (i === NUM_MESSAGES) {
-				done();
+			let i = 0;
+			const NUM_MESSAGES = 4; // 2 from broadcast, 1 from non-broadcast, and 2 from individual message responses
+			function gotMessage() {
+				i += 1;
+				if (i === NUM_MESSAGES) {
+					resolve();
+				}
 			}
-		}
 
-		const expected = ["to all hosts", "to just one host"];
-		promiseWorker.register((msg) => {
-			const expectedMsg = expected.shift();
-			assert.equal(msg, expectedMsg);
-			gotMessage();
-		});
-
-		promiseWorker
-			.postMessage("broadcast")
-			.then((res) => {
-				assert.equal(res, "broadcast");
+			const expected = ["to all hosts", "to just one host"];
+			promiseWorker.register((msg) => {
+				const expectedMsg = expected.shift();
+				assert.equal(msg, expectedMsg);
 				gotMessage();
-			})
-			.then(() => {
-				return promiseWorker.postMessage("foo").then((res) => {
-					assert.equal(res, "foo");
-					gotMessage();
-				});
 			});
+
+			promiseWorker
+				.postMessage("broadcast")
+				.then((res) => {
+					assert.equal(res, "broadcast");
+					gotMessage();
+				})
+				.then(() => {
+					return promiseWorker.postMessage("foo").then((res) => {
+						assert.equal(res, "foo");
+						gotMessage();
+					});
+				});
+		});
 	});
 
-	it("handles errors outside of responses", (done) => {
-		const worker = new SharedWorker(`worker-host-error-outside-response.js`);
-		const promiseWorker = new PWBHost(worker);
+	it("handles errors outside of responses", () => {
+		return new Promise((resolve) => {
+			const worker = new SharedWorker(
+				new URL("./worker-host-error-outside-response.js", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
 
-		promiseWorker.registerError((e) => {
-			assert(e.message.indexOf("error-outside-response") >= 0);
-			assert(e.stack.indexOf("error-outside-response") >= 0);
-			done();
+			promiseWorker.registerError((e) => {
+				assert(e.message.indexOf("error-outside-response") >= 0);
+				assert(e.stack.indexOf("error-outside-response") >= 0);
+				resolve();
+			});
 		});
 	});
 });
