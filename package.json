@@ -14,11 +14,9 @@
 	"scripts": {
 		"prepack": "node --run build",
 		"build": "rm -rf dist && rollup -c && tsc --emitDeclarationOnly",
-		"build-test": "node --run build && node scripts/build-test.js",
-		"lint": "eslint .",
+		"lint": "node --run build && tsc --noEmit && eslint .",
 		"prettier": "prettier --write 'src/*.ts' && prettier --write 'test/*.js' && prettier --write 'scripts/*.js'",
-		"karma": "node --run build-test && karma start",
-		"test": "tsc --noEmit && node --run lint && node --run karma",
+		"test": "node --run build && vitest run",
 		"prepare": "husky"
 	},
 	"repository": {
@@ -52,17 +50,10 @@
 		"eslint-plugin-import-x": "^4.17.1",
 		"globals": "^17.12.0",
 		"husky": "^9.1.7",
-		"karma": "^6.4.1",
-		"karma-chrome-launcher": "^3.1.1",
-		"karma-firefox-launcher": "^2.1.2",
-		"karma-mocha": "^2.0.1",
-		"karma-mocha-reporter": "^2.2.5",
 		"lint-staged": "^17.5.0",
-		"mocha": "^12.0.0",
 		"playwright": "^1.63.0",
 		"prettier": "^3.9.6",
 		"rollup": "^4.63.1",
-		"rollup-plugin-node-builtins": "^2.1.2",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.69.0",
 		"vitest": "^5.0.0"
