@@ -10,6 +10,45 @@ type FakeError = {
 	lineNumber?: number;
 };
 
+const isFakeError = (x: unknown): x is FakeError => {
+	if (typeof x !== "object" || x === null) {
+		return false;
+	}
+
+	const candidate = x as Record<string, unknown>;
+
+	if (
+		typeof candidate.name !== "string" ||
+		typeof candidate.message !== "string"
+	) {
+		return false;
+	}
+
+	if (candidate.stack !== undefined && typeof candidate.stack !== "string") {
+		return false;
+	}
+	if (
+		candidate.fileName !== undefined &&
+		typeof candidate.fileName !== "string"
+	) {
+		return false;
+	}
+	if (
+		candidate.columnNumber !== undefined &&
+		typeof candidate.columnNumber !== "number"
+	) {
+		return false;
+	}
+	if (
+		candidate.lineNumber !== undefined &&
+		typeof candidate.lineNumber !== "number"
+	) {
+		return false;
+	}
+
+	return true;
+};
+
 let messageIDs = 0;
 
 const MSGTYPE_QUERY = 0;
@@ -17,13 +56,77 @@ const MSGTYPE_RESPONSE = 1;
 const MSGTYPE_HOST_ID = 2;
 const MSGTYPE_HOST_CLOSE = 3;
 const MSGTYPE_WORKER_ERROR = 4;
-const MSGTYPES = new Set([
-	MSGTYPE_QUERY,
-	MSGTYPE_RESPONSE,
-	MSGTYPE_HOST_ID,
-	MSGTYPE_HOST_CLOSE,
-	MSGTYPE_WORKER_ERROR,
-]);
+
+type QueryMessage =
+	| [typeof MSGTYPE_QUERY, number, unknown[]]
+	| [typeof MSGTYPE_QUERY, number, unknown[], number | undefined];
+type ResponseMessage = [
+	typeof MSGTYPE_RESPONSE,
+	number,
+	FakeError | null,
+	unknown,
+];
+type HostIdMessage = [typeof MSGTYPE_HOST_ID, number];
+type HostCloseMessage = [typeof MSGTYPE_HOST_CLOSE, number];
+type WorkerErrorMessage = [typeof MSGTYPE_WORKER_ERROR, FakeError];
+
+type Message =
+	| QueryMessage
+	| ResponseMessage
+	| HostIdMessage
+	| HostCloseMessage
+	| WorkerErrorMessage;
+
+const parseMessage = (message: unknown) => {
+	if (!Array.isArray(message) || message.length < 2 || message.length > 4) {
+		return; // Ignore - this message is not for us
+	}
+
+	const type = message[0];
+
+	if (type === MSGTYPE_QUERY) {
+		if (typeof message[1] !== "number") {
+			throw new Error("Invalid messageID");
+		}
+		if (typeof message[3] !== "number" && message[3] !== undefined) {
+			throw new Error("Invalid hostID");
+		}
+		return message as QueryMessage;
+	}
+
+	if (type === MSGTYPE_RESPONSE) {
+		if (typeof message[1] !== "number") {
+			throw new Error("Invalid messageID");
+		}
+		if (message[2] !== null && !isFakeError(message[2])) {
+			throw new Error("Invalid error");
+		}
+		return message as ResponseMessage;
+	}
+
+	if (type === MSGTYPE_HOST_ID) {
+		if (typeof message[1] !== "number") {
+			throw new Error("Invalid hostId");
+		}
+		return message as HostIdMessage;
+	}
+
+	if (type === MSGTYPE_HOST_CLOSE) {
+		if (typeof message[1] !== "number") {
+			throw new Error("Invalid hostId");
+		}
+		return message as HostCloseMessage;
+	}
+
+	if (type === MSGTYPE_WORKER_ERROR) {
+		if (!isFakeError(message[1])) {
+			throw new Error("Invalid error");
+		}
+		return message as WorkerErrorMessage;
+	}
+
+	throw new Error("Invalid message type");
+};
 
 // Inlined from https://github.com/then/is-promise
 const isPromise = (obj: any) =>
@@ -135,8 +238,11 @@ abstract class PWBBase {
 		}
 	}
 
-	_handleQuery(messageID: number, query: any, hostID: number | undefined) {
-		// console.log('_handleQuery', messageID, query);
+	_handleQuery(message: QueryMessage) {
+		const messageID = message[1];
+		const query = message[2];
+		const hostID = message[3];
+
 		try {
 			const result = this._queryCallback(query, hostID);
 
@@ -158,40 +264,21 @@ abstract class PWBBase {
 	}
 
 	// Either return messageID and type if further processing is needed, or undefined otherwise
-	_onMessageCommon(e: MessageEvent): { message: any; type: number } | void {
-		// console.log('_onMessage', e.data);
-		const message = e.data;
-		if (!Array.isArray(message) || message.length < 3 || message.length > 4) {
+	_onMessageCommon(e: MessageEvent) {
+		// console.log('_onMessageCommon', e.data);
+		const message = parseMessage(e.data);
+		if (!message) {
 			return; // Ignore - this message is not for us
 		}
 
-		if (typeof message[0] !== "number" || !MSGTYPES.has(message[0])) {
-			throw new Error("Invalid messageID");
-		}
-		const type = message[0];
-
-		if (typeof message[1] !== "number") {
-			throw new Error("Invalid messageID");
-		}
-		const messageID: number = message[1];
-
-		if (type === MSGTYPE_QUERY) {
-			const query = message[2];
-			if (typeof message[3] !== "number" && message[3] !== undefined) {
-				throw new Error("Invalid hostID");
-			}
-			const hostID: number | undefined = message[3];
-
-			this._handleQuery(messageID, query, hostID);
+		if (message[0] === MSGTYPE_QUERY) {
+			this._handleQuery(message);
 			return;
 		}
-		if (type === MSGTYPE_RESPONSE) {
-			if (message[2] !== null && typeof message[2] !== "object") {
-				throw new Error("Invalid error");
-			}
+		if (message[0] === MSGTYPE_RESPONSE) {
+			const messageID = message[1];
 			const error: Error | null =
 				message[2] === null ? null : fromFakeError(message[2]);
-			const result = message[3];
 
 			const callback = this._callbacks.get(messageID);
 
@@ -202,11 +289,11 @@ abstract class PWBBase {
 			}
 
 			this._callbacks.delete(messageID);
-			callback(error, result);
+			callback(error, message[3]);
 			return;
 		}
 
-		return { message, type };
+		return message;
 	}
 }
 
@@ -252,7 +339,7 @@ class PWBHost extends PWBBase {
 			window.addEventListener("beforeunload", () => {
 				// Prevent firing if we don't know hostID yet
 				if (this._hostID !== undefined) {
-					this._postMessage([MSGTYPE_HOST_CLOSE, -1, this._hostID]);
+					this._postMessage([MSGTYPE_HOST_CLOSE, this._hostID]);
 				}
 			});
 		}
@@ -334,20 +421,13 @@ class PWBHost extends PWBBase {
 	}
 
 	_onMessage(e: MessageEvent) {
-		const common = this._onMessageCommon(e);
-		if (!common) {
+		const message = this._onMessageCommon(e);
+		if (!message) {
 			return;
 		}
 
-		const { message, type } = common;
-
-		if (type === MSGTYPE_HOST_ID) {
-			if (message[2] !== undefined && typeof message[2] !== "number") {
-				throw new Error("Invalid hostID");
-			}
-			const hostID: number | undefined = message[2];
-
-			this._hostID = hostID;
+		if (message[0] === MSGTYPE_HOST_ID) {
+			this._hostID = message[1];
 
 			if (this._hostIDQueue !== undefined) {
 				this._hostIDQueue.forEach((func) => {
@@ -358,13 +438,9 @@ class PWBHost extends PWBBase {
 				});
 				this._hostIDQueue = undefined; // Never needed again after initial setup
 			}
-		} else if (type === MSGTYPE_WORKER_ERROR) {
-			if (
-				message[2] !== undefined &&
-				message[2] !== null &&
-				typeof message[2] === "object"
-			) {
-				const error = fromFakeError(message[2]);
+		} else if (message[0] === MSGTYPE_WORKER_ERROR) {
+			if (message[1] !== null) {
+				const error = fromFakeError(message[1]);
 				if (this._errorCallback !== undefined) {
 					this._errorCallback(error);
 				}
@@ -406,7 +482,7 @@ class PWBWorker extends PWBBase {
 				this._hosts.set(hostID, { port });
 
 				// Send back hostID to this host, otherwise it has no way to know it
-				this._postMessage([MSGTYPE_HOST_ID, -1, hostID], hostID);
+				this._postMessage([MSGTYPE_HOST_ID, hostID], hostID);
 			});
 
 			self.addEventListener("error", (e: any) => {
@@ -417,7 +493,7 @@ class PWBWorker extends PWBBase {
 
 				if (hostID !== undefined) {
 					this._postMessage(
-						[MSGTYPE_WORKER_ERROR, -1, toFakeError(e.error)],
+						[MSGTYPE_WORKER_ERROR, toFakeError(e.error)],
 						hostID,
 					);
 				}
@@ -430,18 +506,18 @@ class PWBWorker extends PWBBase {
 			// Since this is not a Shared Worker, hostID is always 0 so it's not strictly required to
 			// send this back, but it makes the API a bit more consistent if there is the same
 			// initialization handshake in both cases.
-			this._postMessage([MSGTYPE_HOST_ID, -1, 0], 0);
+			this._postMessage([MSGTYPE_HOST_ID, 0], 0);
 
 			self.addEventListener("error", (e: any) => {
 				logError(e.error);
 
-				this._postMessage([MSGTYPE_WORKER_ERROR, -1, toFakeError(e.error)]);
+				this._postMessage([MSGTYPE_WORKER_ERROR, toFakeError(e.error)]);
 			});
 		}
 	}
 
 	_postMessage(
-		obj: any[],
+		message: Message,
 		targetHostID?: number | undefined,
 		transfer?: Transferable[] | undefined,
 	) {
@@ -451,12 +527,12 @@ class PWBWorker extends PWBBase {
 			this._hosts.forEach(({ port }, hostID) => {
 				if (targetHostID === undefined || targetHostID === hostID) {
 					// @ts-expect-error TypeScript thinks transfer can't be undefined
-					port.postMessage(obj, transfer);
+					port.postMessage(message, transfer);
 				}
 			});
 		} else if (this._workerType === "Worker") {
 			// @ts-expect-error TypeScript thinks self is window, which has a different postMessage call signature. In a worker, this is correct.
-			self.postMessage(obj, transfer);
+			self.postMessage(message, transfer);
 		} else {
 			throw new Error("WTF");
 		}
@@ -475,7 +551,11 @@ class PWBWorker extends PWBBase {
 			const messageID = messageIDs;
 			messageIDs += 1;
 
-			const messageToSend = [MSGTYPE_QUERY, messageID, userMessage];
+			const messageToSend: QueryMessage = [
+				MSGTYPE_QUERY,
+				messageID,
+				userMessage,
+			];
 
 			this._callbacks.set(messageID, (error: Error | null, result: any) => {
 				if (error) {
@@ -493,20 +573,13 @@ class PWBWorker extends PWBBase {
 	}
 
 	_onMessage(e: MessageEvent) {
-		const common = this._onMessageCommon(e);
-		if (!common) {
+		const message = this._onMessageCommon(e);
+		if (!message) {
 			return;
 		}
 
-		const { message, type } = common;
-
-		if (type === MSGTYPE_HOST_CLOSE) {
-			if (typeof message[2] !== "number") {
-				throw new Error("Invalid hostID");
-			}
-			const hostID: number = message[2];
-
-			this._hosts.delete(hostID);
+		if (message[0] === MSGTYPE_HOST_CLOSE) {
+			this._hosts.delete(message[1]);
 		}
 	}
 }
