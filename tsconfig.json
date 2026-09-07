@@ -18,7 +18,9 @@
 		"module": "preserve",
 		"noEmit": true,
 
-		"lib": ["es2022", "dom", "dom.iterable"]
+		"lib": ["es2022", "dom", "dom.iterable"],
+
+		"allowImportingTsExtensions": true
 	},
 	"include": ["src"]
 }
