@@ -17,13 +17,13 @@ const MSGTYPE_RESPONSE = 1;
 const MSGTYPE_HOST_ID = 2;
 const MSGTYPE_HOST_CLOSE = 3;
 const MSGTYPE_WORKER_ERROR = 4;
-const MSGTYPES = [
+const MSGTYPES = new Set([
 	MSGTYPE_QUERY,
 	MSGTYPE_RESPONSE,
 	MSGTYPE_HOST_ID,
 	MSGTYPE_HOST_CLOSE,
 	MSGTYPE_WORKER_ERROR,
-];
+]);
 
 // Inlined from https://github.com/then/is-promise
 const isPromise = (obj: any) =>
@@ -165,7 +165,7 @@ abstract class PWBBase {
 			return; // Ignore - this message is not for us
 		}
 
-		if (typeof message[0] !== "number" || MSGTYPES.indexOf(message[0]) < 0) {
+		if (typeof message[0] !== "number" || !MSGTYPES.has(message[0])) {
 			throw new Error("Invalid messageID");
 		}
 		const type = message[0];
