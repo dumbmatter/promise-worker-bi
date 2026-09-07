@@ -54,7 +54,7 @@ This should obviously print "true":
 
 ```js
 blob = new Blob(["self.onmessage = function() {};"], {
-  type: "text/javascript",
+	type: "text/javascript",
 });
 worker = new Worker(window.URL.createObjectURL(blob));
 console.log(worker instanceof Worker);

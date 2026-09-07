@@ -21,14 +21,14 @@ const promiseWorker = new PWBHost(worker);
 
 // Only needed if you send messages from the worker to the host
 promiseWorker.register((message) => {
-  return "pong2";
+	return "pong2";
 });
 
 try {
-  const response = await promiseWorker.postMessage("ping");
-  // handle response 'pong'
+	const response = await promiseWorker.postMessage("ping");
+	// handle response 'pong'
 } catch (error) {
-  // handle error
+	// handle error
 }
 ```
 
@@ -42,14 +42,14 @@ const promiseWorker = new PWBWorker();
 
 // Only needed if you send messages from the host to the worker
 promiseWorker.register((message) => {
-  return "pong";
+	return "pong";
 });
 
 try {
-  const response = await promiseWorker.postMessage("ping2");
-  // handle response 'pong2'
+	const response = await promiseWorker.postMessage("ping2");
+	// handle response 'pong2'
 } catch (error) {
-  // handle error
+	// handle error
 }
 ```
 
@@ -61,15 +61,15 @@ The message you send can be any object, array, string, number, etc. - anything t
 
 ```js
 await promiseWorker.postMessage({
-  hello: "world",
-  answer: 42,
-  "this is fun": true,
+	hello: "world",
+	answer: 42,
+	"this is fun": true,
 });
 ```
 
 ```js
 promiseWorker.register((message) => {
-  console.log(message); // { hello: 'world', answer: 42, 'this is fun': true }
+	console.log(message); // { hello: 'world', answer: 42, 'this is fun': true }
 });
 ```
 
@@ -79,7 +79,7 @@ The registered handler can return either a Promise or a normal value:
 
 ```js
 promiseWorker.register(async () => {
-  "much async, very promise";
+	"much async, very promise";
 });
 ```
 
@@ -94,15 +94,15 @@ Any thrown errors or asynchronous rejections during a response will be propagate
 
 ```js
 promiseWorker.register((message) => {
-  throw new Error("naughty!");
+	throw new Error("naughty!");
 });
 ```
 
 ```js
 try {
-  await promiseWorker.postMessage("whoops");
+	await promiseWorker.postMessage("whoops");
 } catch (error) {
-  console.log(error.message); // 'naughty!'
+	console.log(error.message); // 'naughty!'
 }
 ```
 
@@ -114,7 +114,7 @@ Therefore, promise-worker-bi includes a unified API that works in Web Workers an
 
 ```js
 promiseWorker.registerError((error) => {
-  console.log("Error inside worker!", err);
+	console.log("Error inside worker!", err);
 });
 ```
 
@@ -130,21 +130,21 @@ If you need to send messages of multiple types to the worker, just add some type
 
 ```js
 const response1 = await promiseWorker.postMessage({
-  type: "en",
+	type: "en",
 });
 
 const response2 = await promiseWorker.postMessage({
-  type: "en",
+	type: "en",
 });
 ```
 
 ```js
 promiseWorker.register((message) => {
-  if (message.type === "en") {
-    return "Hello!";
-  } else if (message.type === "fr") {
-    return "Bonjour!";
-  }
+	if (message.type === "en") {
+		return "Hello!";
+	} else if (message.type === "fr") {
+		return "Bonjour!";
+	}
 });
 ```
 
@@ -162,14 +162,14 @@ const worker = new SharedWorker("worker.js");
 const promiseWorker = new PWBHost(worker);
 
 promiseWorker.register((message) => {
-  console.log(message);
+	console.log(message);
 });
 
 // setTimeout is just to give you enough time to open main.js and main2.js in
 // two separate tabs.
 setTimeout(async () => {
-  const response = await promiseWorker.postMessage("broadcast");
-  console.log("Echoed response:", response);
+	const response = await promiseWorker.postMessage("broadcast");
+	console.log("Echoed response:", response);
 }, 1000);
 ```
 
@@ -199,13 +199,13 @@ import { PWBWorker } from "promise-worker-bi";
 const promiseWorker = new PWBWorker();
 
 promiseWorker.register((message, hostID) => {
-  if (message === "broadcast") {
-    promiseWorker.postMessage("to all tabs");
-  } else {
-    promiseWorker.postMessage(`hello host ${hostID}`, hostID);
-  }
+	if (message === "broadcast") {
+		promiseWorker.postMessage("to all tabs");
+	} else {
+		promiseWorker.postMessage(`hello host ${hostID}`, hostID);
+	}
 
-  return message;
+	return message;
 });
 ```
 
@@ -244,12 +244,12 @@ If you want to respond to a message by sending a transferable object back, such 
 
 ```js
 promiseWorker.register(async (message) => {
-  const processedMessage = await processMessage(message);
+	const processedMessage = await processMessage(message);
 
-  return {
-    message: processedMessage,
-    _PWB_TRANSFER: [processedMessage.someTransferableProprty],
-  };
+	return {
+		message: processedMessage,
+		_PWB_TRANSFER: [processedMessage.someTransferableProprty],
+	};
 });
 ```
 

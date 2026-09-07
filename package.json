@@ -51,8 +51,8 @@
 		"globals": "^17.12.0",
 		"husky": "^9.1.7",
 		"lint-staged": "^17.5.0",
+		"oxfmt": "^0.66.0",
 		"playwright": "^1.63.0",
-		"prettier": "^3.9.6",
 		"rollup": "^4.63.1",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.69.0",
@@ -62,6 +62,6 @@
 		"dist"
 	],
 	"lint-staged": {
-		"*.{js,cjs,mjs,jsx,json,scss,ts,cts,mts,tsx}": "prettier --write"
+		"*": "oxfmt --no-error-on-unmatched-pattern"
 	}
 }
