@@ -1,10 +1,10 @@
 import { fromFakeError } from "./fakeError.ts";
 import {
-	MSGTYPE_HOST_CLOSE,
 	MSGTYPE_HOST_ID,
+	MSGTYPE_HOST_LOCK,
 	MSGTYPE_QUERY,
 	MSGTYPE_WORKER_ERROR,
-	type HostCloseMessage,
+	type HostLockMessage,
 	type QueryMessage,
 	type ResponseMessage,
 } from "./message.ts";
@@ -44,17 +44,6 @@ export class PWBHost extends PWBBase {
 
 			worker.port.addEventListener("message", this._onMessage);
 			worker.port.start();
-
-			// Handle tab close. This isn't perfect, but there is no perfect method
-			// http://stackoverflow.com/q/13662089/786644 and this should work like
-			// 99% of the time. It is a memory leak if it fails, but for most use
-			// cases, it shouldn't be noticeable.
-			window.addEventListener("beforeunload", () => {
-				// Prevent firing if we don't know hostID yet
-				if (this._hostID !== undefined) {
-					this._postMessage([MSGTYPE_HOST_CLOSE, this._hostID]);
-				}
-			});
 		}
 
 		this._worker = worker;
@@ -74,7 +63,7 @@ export class PWBHost extends PWBBase {
 	}
 
 	protected _postMessage(
-		obj: QueryMessage | ResponseMessage | HostCloseMessage,
+		obj: QueryMessage | ResponseMessage | HostLockMessage,
 		_hostID?: unknown,
 		transfer?: Transferable[] | undefined,
 	) {
@@ -135,7 +124,12 @@ export class PWBHost extends PWBBase {
 		}
 
 		if (message[0] === MSGTYPE_HOST_ID) {
-			this._hostID = message[1];
+			if (this._hostID !== undefined) {
+				throw new Error("Received duplicate hostID message");
+			}
+
+			const hostID = message[1];
+			this._hostID = hostID;
 
 			if (this._hostIDQueue !== undefined) {
 				this._hostIDQueue.forEach((func) => {
@@ -146,6 +140,17 @@ export class PWBHost extends PWBBase {
 				});
 				this._hostIDQueue = undefined; // Never needed again after initial setup
 			}
+
+			// Use Web Locks API to work around the lack of a native way for the worker to know when the tab has closed. Worker will request a lock, and only get it when the tab is closed. Previously this used the "beforeunload" event but that is not guaranteed to fire and also caused problems when an app using promise-worker-bi wanted to use "beforeunload" to let the user cancel closing the tab.
+
+			// Don't assume hostID is unique, could be two instances of this library with different workers
+			const lockId = `pwb-${Math.random()}`;
+
+			navigator.locks.request(lockId, async () => {
+				console.log(`Lock ${lockId} acquired on host ${hostID}`);
+
+				this._postMessage([MSGTYPE_HOST_LOCK, hostID, lockId]);
+			});
 		} else if (message[0] === MSGTYPE_WORKER_ERROR) {
 			if (message[1] !== null) {
 				const error = fromFakeError(message[1]);

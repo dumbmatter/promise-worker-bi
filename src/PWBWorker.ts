@@ -1,7 +1,7 @@
 import { toFakeError } from "./fakeError.ts";
 import {
-	MSGTYPE_HOST_CLOSE,
 	MSGTYPE_HOST_ID,
+	MSGTYPE_HOST_LOCK,
 	MSGTYPE_QUERY,
 	MSGTYPE_WORKER_ERROR,
 	type HostIdMessage,
@@ -132,8 +132,12 @@ export class PWBWorker extends PWBBase {
 			return;
 		}
 
-		if (message[0] === MSGTYPE_HOST_CLOSE) {
-			this._hosts.delete(message[1]);
+		if (message[0] === MSGTYPE_HOST_LOCK) {
+			navigator.locks.request(message[2], async () => {
+				console.log(`Lock ${message[2]} acquired on host ${message[1]}`);
+
+				this._hosts.delete(message[1]);
+			});
 		}
 	}
 }

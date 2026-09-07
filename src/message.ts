@@ -3,7 +3,7 @@ import { isFakeError, type FakeError } from "./fakeError.ts";
 export const MSGTYPE_QUERY = 0;
 export const MSGTYPE_RESPONSE = 1;
 export const MSGTYPE_HOST_ID = 2;
-export const MSGTYPE_HOST_CLOSE = 3;
+export const MSGTYPE_HOST_LOCK = 3;
 export const MSGTYPE_WORKER_ERROR = 4;
 
 export type QueryMessage =
@@ -13,14 +13,14 @@ export type ResponseMessage =
 	| [typeof MSGTYPE_RESPONSE, number, FakeError]
 	| [typeof MSGTYPE_RESPONSE, number, null, unknown];
 export type HostIdMessage = [typeof MSGTYPE_HOST_ID, number];
-export type HostCloseMessage = [typeof MSGTYPE_HOST_CLOSE, number];
+export type HostLockMessage = [typeof MSGTYPE_HOST_LOCK, number, string];
 export type WorkerErrorMessage = [typeof MSGTYPE_WORKER_ERROR, FakeError];
 
 export type Message =
 	| QueryMessage
 	| ResponseMessage
 	| HostIdMessage
-	| HostCloseMessage
+	| HostLockMessage
 	| WorkerErrorMessage;
 
 export const parseMessage = (message: unknown) => {
@@ -57,11 +57,14 @@ export const parseMessage = (message: unknown) => {
 		return message as HostIdMessage;
 	}
 
-	if (type === MSGTYPE_HOST_CLOSE) {
+	if (type === MSGTYPE_HOST_LOCK) {
 		if (typeof message[1] !== "number") {
 			throw new Error("Invalid hostId");
 		}
-		return message as HostCloseMessage;
+		if (typeof message[2] !== "string") {
+			throw new Error("Invalid lockId");
+		}
+		return message as HostLockMessage;
 	}
 
 	if (type === MSGTYPE_WORKER_ERROR) {
