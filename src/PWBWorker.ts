@@ -136,7 +136,10 @@ export class PWBWorker extends PWBBase {
 			navigator.locks.request(message[2], async () => {
 				console.log(`Lock ${message[2]} acquired on host ${message[1]}`);
 
-				this._hosts.delete(message[1]);
+				// If hosts.size is ever 1  here, that means there are no tabs left, so either something went horribly wrong (would rather not delete the last host then, in case it's still alive) or the last tab is closing (and the worker will automatically be killed soon)
+				if (this._hosts.size > 1) {
+					this._hosts.delete(message[1]);
+				}
 			});
 		}
 	}
