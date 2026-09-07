@@ -12,11 +12,10 @@
 	},
 	"type": "module",
 	"scripts": {
-		"prepack": "node --run build",
+		"prepack": "pnpm run build",
 		"build": "tsdown",
-		"lint": "node --run build && tsc && eslint .",
-		"prettier": "prettier --write 'src/*.ts' && prettier --write 'test/*.js' && prettier --write 'scripts/*.js'",
-		"test": "node --run build && vitest run",
+		"lint": "pnpm run build && tsc && eslint .",
+		"test": "pnpm run build && vitest run",
 		"prepare": "husky"
 	},
 	"repository": {

@@ -1,5 +1,5 @@
 type ErrorCallback = (a: Error) => void;
-type QueryCallback = (a: any[], b: number | undefined) => any;
+type QueryCallback = (a: unknown, b: number | undefined) => any;
 
 type FakeError = {
 	name: string;
@@ -58,14 +58,11 @@ const MSGTYPE_HOST_CLOSE = 3;
 const MSGTYPE_WORKER_ERROR = 4;
 
 type QueryMessage =
-	| [typeof MSGTYPE_QUERY, number, unknown[]]
-	| [typeof MSGTYPE_QUERY, number, unknown[], number | undefined];
-type ResponseMessage = [
-	typeof MSGTYPE_RESPONSE,
-	number,
-	FakeError | null,
-	unknown,
-];
+	| [typeof MSGTYPE_QUERY, number, unknown]
+	| [typeof MSGTYPE_QUERY, number, unknown, number | undefined];
+type ResponseMessage =
+	| [typeof MSGTYPE_RESPONSE, number, FakeError]
+	| [typeof MSGTYPE_RESPONSE, number, null, unknown];
 type HostIdMessage = [typeof MSGTYPE_HOST_ID, number];
 type HostCloseMessage = [typeof MSGTYPE_HOST_CLOSE, number];
 type WorkerErrorMessage = [typeof MSGTYPE_WORKER_ERROR, FakeError];
@@ -129,10 +126,10 @@ const parseMessage = (message: unknown) => {
 };
 
 // Inlined from https://github.com/then/is-promise
-const isPromise = (obj: any) =>
+const isPromise = (obj: unknown) =>
 	!!obj &&
 	(typeof obj === "object" || typeof obj === "function") &&
-	typeof obj.then === "function";
+	typeof (obj as any).then === "function";
 
 const toFakeError = (error: Error): FakeError => {
 	const fakeError: FakeError = {
@@ -177,7 +174,7 @@ const logError = (err: Error) => {
 };
 
 abstract class PWBBase {
-	_callbacks: Map<number, (a: Error | null, b: any) => void>;
+	_callbacks: Map<number, (a: Error | null, b: unknown) => void>;
 
 	_queryCallback: QueryCallback;
 
@@ -198,9 +195,9 @@ abstract class PWBBase {
 		this._queryCallback = cb;
 	}
 
-	// From worker, 2nd param could be hostID if sending to specific host. From UI, 2nd param could be an array of transferable objects
+	// From worker, 2nd param could be hostID if sending to specific host. From either, 3rd param could be an array of transferable objects
 	abstract _postMessage(
-		obj: any[],
+		obj: Message,
 		hostID?: number | undefined,
 		transfer?: Transferable[] | undefined,
 	): void;
@@ -208,7 +205,7 @@ abstract class PWBBase {
 	_postResponse(
 		messageID: number,
 		error: Error | null,
-		result?: any,
+		result?: unknown,
 		hostID?: number | undefined,
 	) {
 		// console.log('_postResponse', messageID, error, result);
@@ -228,9 +225,9 @@ abstract class PWBBase {
 				Object.hasOwn(result, "_PWB_TRANSFER")
 			) {
 				this._postMessage(
-					[MSGTYPE_RESPONSE, messageID, null, result.message],
+					[MSGTYPE_RESPONSE, messageID, null, (result as any).message],
 					hostID,
-					result._PWB_TRANSFER,
+					(result as any)._PWB_TRANSFER,
 				);
 			} else {
 				this._postMessage([MSGTYPE_RESPONSE, messageID, null, result], hostID);
@@ -250,10 +247,10 @@ abstract class PWBBase {
 				this._postResponse(messageID, null, result, hostID);
 			} else {
 				result.then(
-					(finalResult: any) => {
+					(finalResult: unknown) => {
 						this._postResponse(messageID, null, finalResult, hostID);
 					},
-					(finalError: any) => {
+					(finalError: Error) => {
 						this._postResponse(messageID, finalError, hostID);
 					},
 				);
@@ -361,7 +358,7 @@ class PWBHost extends PWBBase {
 	}
 
 	_postMessage(
-		obj: any[],
+		obj: QueryMessage | ResponseMessage | HostCloseMessage,
 		_hostID?: unknown,
 		transfer?: Transferable[] | undefined,
 	) {
@@ -378,26 +375,26 @@ class PWBHost extends PWBBase {
 	}
 
 	postMessage(
-		userMessage: any,
+		userMessage: unknown,
 		_hostID?: undefined,
 		transfer?: Transferable[] | undefined,
 	): Promise<any> {
 		// console.log('postMessage', userMessage, _hostID, transfer);
 		const actuallyPostMessage = (
-			resolve: (value?: any) => void,
-			reject: (reason?: any) => void,
+			resolve: (value?: unknown) => void,
+			reject: (reason?: unknown) => void,
 		) => {
 			const messageID = messageIDs;
 			messageIDs += 1;
 
-			const messageToSend = [
+			const messageToSend: QueryMessage = [
 				MSGTYPE_QUERY,
 				messageID,
 				userMessage,
 				this._hostID,
 			];
 
-			this._callbacks.set(messageID, (error: Error | null, result: any) => {
+			this._callbacks.set(messageID, (error, result) => {
 				if (error) {
 					reject(error);
 				} else {
@@ -485,7 +482,7 @@ class PWBWorker extends PWBBase {
 				this._postMessage([MSGTYPE_HOST_ID, hostID], hostID);
 			});
 
-			self.addEventListener("error", (e: any) => {
+			self.addEventListener("error", (e) => {
 				logError(e.error);
 
 				// Just send to first host, so as to not duplicate error tracking
@@ -508,7 +505,7 @@ class PWBWorker extends PWBBase {
 			// initialization handshake in both cases.
 			this._postMessage([MSGTYPE_HOST_ID, 0], 0);
 
-			self.addEventListener("error", (e: any) => {
+			self.addEventListener("error", (e) => {
 				logError(e.error);
 
 				this._postMessage([MSGTYPE_WORKER_ERROR, toFakeError(e.error)]);
@@ -517,7 +514,11 @@ class PWBWorker extends PWBBase {
 	}
 
 	_postMessage(
-		message: Message,
+		message:
+			| QueryMessage
+			| ResponseMessage
+			| HostIdMessage
+			| WorkerErrorMessage,
 		targetHostID?: number | undefined,
 		transfer?: Transferable[] | undefined,
 	) {
@@ -539,14 +540,14 @@ class PWBWorker extends PWBBase {
 	}
 
 	postMessage(
-		userMessage: any,
+		userMessage: unknown,
 		targetHostID?: number | undefined,
 		transfer?: Transferable[] | undefined,
-	): Promise<any> {
+	): Promise<unknown> {
 		// console.log('postMessage', userMessage, targetHostID);
 		const actuallyPostMessage = (
-			resolve: (value?: any) => void,
-			reject: (reason?: any) => void,
+			resolve: (value?: unknown) => void,
+			reject: (reason?: unknown) => void,
 		) => {
 			const messageID = messageIDs;
 			messageIDs += 1;
@@ -557,7 +558,7 @@ class PWBWorker extends PWBBase {
 				userMessage,
 			];
 
-			this._callbacks.set(messageID, (error: Error | null, result: any) => {
+			this._callbacks.set(messageID, (error, result) => {
 				if (error) {
 					reject(error);
 				} else {
