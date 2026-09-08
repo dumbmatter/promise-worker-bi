@@ -301,17 +301,17 @@ Create a new instance of `PWBWorker`.
 
 ### Both bundles
 
-#### `promiseWorker.register((message: any, hostID?: number) => any)`
+#### `promiseWorker.register((message: unknown, hostID?: number) => unknown)`
 
 Register a message handler wherever you will be receiving messages: in the worker, in the browser, or both. Your handler consumes a message and returns a promise or value.
 
 The `hostID` parameter is only defined inside a shared worker, in which case it is a unique number identifying the host that the message came from.
 
-The return value of the callback function (shown above as `any`) must resolve to something [structured cloneable](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).
+The return value of the callback function (shown above as `unknown`) must resolve to something [structured cloneable](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).
 
-If you want to [transfer an object](https://developer.mozilla.org/en-US/docs/Glossary/Transferable_objects) in the return value of the callback, then the return type should be `{ message: any, _PWB_TRANSFER: Transferable[] }` rather than just `any`.
+If you want to [transfer an object](https://developer.mozilla.org/en-US/docs/Glossary/Transferable_objects) in the return value of the callback, then the return type should be `{ message: unknown, _PWB_TRANSFER: Transferable[] }` rather than just `unknown`.
 
-#### `promiseWorker.postMessage(message: any, hostID?: number, transfer?: Transferable[]): Promise<any>`
+#### `promiseWorker.postMessage(message: unknown, hostID?: number, transfer?: Transferable[]): Promise<unknown>`
 
 Send a message to the browser or worker and return a Promise. `message` must resolve to something [structured cloneable](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).
 
