@@ -52,14 +52,14 @@ export const parseMessage = (message: unknown) => {
 
 	if (type === MSGTYPE_HOST_ID) {
 		if (typeof message[1] !== "number") {
-			throw new Error("Invalid hostId");
+			throw new Error("Invalid hostID");
 		}
 		return message as HostIdMessage;
 	}
 
 	if (type === MSGTYPE_HOST_LOCK) {
 		if (typeof message[1] !== "number") {
-			throw new Error("Invalid hostId");
+			throw new Error("Invalid hostID");
 		}
 		if (typeof message[2] !== "string") {
 			throw new Error("Invalid lockId");

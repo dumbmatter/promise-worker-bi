@@ -8,21 +8,9 @@ import {
 	type QueryMessage,
 	type ResponseMessage,
 } from "./message.ts";
-import { PWBBase } from "./PWBBase.ts";
+import { isSharedWorker, PWBBase } from "./PWBBase.ts";
 
 type ErrorCallback = (a: Error) => void;
-
-// This used to be `worker instanceof Worker` but I have recieved reports that in some weird cases, Safari will
-// inappropriately return false for that, even in obvious cases like:
-//
-//     blob = new Blob(["self.onmessage = function() {};"], { type: "text/javascript" });
-//     worker = new Worker(window.URL.createObjectURL(blob));
-//     console.log(worker instanceof Worker);
-//
-// So instead, let's do this test for worker.port which only exists on shared workers.
-const isSharedWorker = (worker: SharedWorker | Worker): worker is SharedWorker => {
-	return (worker as SharedWorker).port !== undefined;
-};
 
 let nextMessageID = 0;
 
@@ -36,12 +24,8 @@ export class PWBHost extends PWBBase {
 		super();
 
 		if (!isSharedWorker(worker)) {
-			this._workerType = "Worker";
-
 			worker.addEventListener("message", this._onMessage);
 		} else {
-			this._workerType = "SharedWorker";
-
 			worker.port.addEventListener("message", this._onMessage);
 			worker.port.start();
 		}
@@ -68,14 +52,18 @@ export class PWBHost extends PWBBase {
 		transfer?: Transferable[] | undefined,
 	) {
 		// console.log('_postMessage', obj, _hostID, transfer);
-		if (this._workerType === "Worker") {
-			// @ts-expect-error - it doesn't know if _worker is Worker or SharedWorker, but I do
-			this._worker.postMessage(obj, transfer);
-		} else if (this._workerType === "SharedWorker") {
-			// @ts-expect-error - it doesn't know if _worker is Worker or SharedWorker, but I do
-			this._worker.port.postMessage(obj, transfer);
+		if (isSharedWorker(this._worker)) {
+			if (transfer) {
+				this._worker.port.postMessage(obj, transfer);
+			} else {
+				this._worker.port.postMessage(obj);
+			}
 		} else {
-			throw new Error("WTF");
+			if (transfer) {
+				this._worker.postMessage(obj, transfer);
+			} else {
+				this._worker.postMessage(obj);
+			}
 		}
 	}
 
@@ -132,12 +120,12 @@ export class PWBHost extends PWBBase {
 			this._hostID = hostID;
 
 			if (this._hostIDQueue !== undefined) {
-				this._hostIDQueue.forEach((func) => {
+				for (const cb of this._hostIDQueue) {
 					// Not entirely sure why setTimeout is needed, might be just for unit tests
 					setTimeout(() => {
-						func();
+						cb();
 					}, 0);
-				});
+				}
 				this._hostIDQueue = undefined; // Never needed again after initial setup
 			}
 

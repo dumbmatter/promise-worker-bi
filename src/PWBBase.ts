@@ -21,10 +21,21 @@ export const logError = (err: Error) => {
 	console.error(err); // Safari needs it on new line
 };
 
+// This used to be `worker instanceof Worker` but I have recieved reports that in some weird cases, Safari will
+// inappropriately return false for that, even in obvious cases like:
+//
+//     blob = new Blob(["self.onmessage = function() {};"], { type: "text/javascript" });
+//     worker = new Worker(window.URL.createObjectURL(blob));
+//     console.log(worker instanceof Worker);
+//
+// So instead, let's do this test for worker.port which only exists on shared workers.
+export const isSharedWorker = (worker: SharedWorker | Worker): worker is SharedWorker => {
+	return (worker as SharedWorker).port !== undefined;
+};
+
 export abstract class PWBBase {
 	protected _callbacks: Map<number, (a: Error | null, b: unknown) => void>;
 	protected _queryCallback: QueryCallback;
-	protected _workerType: "SharedWorker" | "Worker" | undefined;
 
 	constructor() {
 		// console.log('constructor', worker);

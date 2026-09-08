@@ -1,3 +1,5 @@
+/// <reference lib="webworker" />
+
 import { toFakeError } from "./fakeError.ts";
 import {
 	MSGTYPE_HOST_ID,
@@ -16,17 +18,13 @@ let nextMessageID = 0;
 export class PWBWorker extends PWBBase {
 	private _hosts = new Map<number, { port: MessagePort }>();
 	private _maxHostID = -1;
+	private _sharedWorker: boolean;
 
 	constructor() {
 		super();
 
-		if (
-			// @ts-expect-error
-			typeof SharedWorkerGlobalScope !== "undefined" &&
-			// @ts-expect-error
-			self instanceof SharedWorkerGlobalScope
-		) {
-			this._workerType = "SharedWorker";
+		if (typeof SharedWorkerGlobalScope !== "undefined" && self instanceof SharedWorkerGlobalScope) {
+			this._sharedWorker = true;
 
 			self.addEventListener("connect", (e) => {
 				// @ts-expect-error
@@ -53,7 +51,7 @@ export class PWBWorker extends PWBBase {
 				}
 			});
 		} else {
-			this._workerType = "Worker";
+			this._sharedWorker = false;
 
 			self.addEventListener("message", this._onMessage);
 
@@ -76,19 +74,24 @@ export class PWBWorker extends PWBBase {
 		transfer?: Transferable[] | undefined,
 	) {
 		// console.log('_postMessage', obj, targetHostID);
-		if (this._workerType === "SharedWorker") {
+		if (this._sharedWorker) {
 			// If targetHostID has been deleted, this will do nothing, which is fine I think
-			this._hosts.forEach(({ port }, hostID) => {
+			for (const [hostID, { port }] of this._hosts) {
 				if (targetHostID === undefined || targetHostID === hostID) {
-					// @ts-expect-error TypeScript thinks transfer can't be undefined
-					port.postMessage(message, transfer);
+					if (transfer) {
+						port.postMessage(message, transfer);
+					} else {
+						port.postMessage(message);
+					}
 				}
-			});
-		} else if (this._workerType === "Worker") {
-			// @ts-expect-error TypeScript thinks self is window, which has a different postMessage call signature. In a worker, this is correct.
-			self.postMessage(message, transfer);
+			}
 		} else {
-			throw new Error("WTF");
+			const _self = self as DedicatedWorkerGlobalScope;
+			if (transfer) {
+				_self.postMessage(message, transfer);
+			} else {
+				_self.postMessage(message);
+			}
 		}
 	}
 

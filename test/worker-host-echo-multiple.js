@@ -19,9 +19,9 @@ const words = [
 	"kiki",
 ];
 
-words.forEach((word) => {
-	return promiseWorker.postMessage(word).then((res) => {
+for (const word of words) {
+	promiseWorker.postMessage(word).then((res) => {
 		assert.equal(res, word);
 		return promiseWorker.postMessage(res);
 	});
-});
+}
