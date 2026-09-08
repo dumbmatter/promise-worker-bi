@@ -15,7 +15,9 @@ import { logError, PWBBase } from "./PWBBase.ts";
 
 let nextMessageID = 0;
 
-export class PWBWorker extends PWBBase {
+type WorkerEvents = Record<string, Event>;
+
+export class PWBWorker extends PWBBase<WorkerEvents> {
 	private _hosts = new Map<number, { port: MessagePort }>();
 	private _maxHostID = -1;
 	private _sharedWorker: boolean;
@@ -25,10 +27,10 @@ export class PWBWorker extends PWBBase {
 
 		if (typeof SharedWorkerGlobalScope !== "undefined" && self instanceof SharedWorkerGlobalScope) {
 			this._sharedWorker = true;
+			const _self = self as SharedWorkerGlobalScope;
 
-			self.addEventListener("connect", (e) => {
-				// @ts-expect-error
-				const port = e.ports[0];
+			_self.addEventListener("connect", (e) => {
+				const port = e.ports[0]!;
 				port.addEventListener("message", (e2: MessageEvent) => this._onMessage(e2));
 				port.start();
 
@@ -40,7 +42,7 @@ export class PWBWorker extends PWBBase {
 				this._postMessage([MSGTYPE_HOST_ID, hostID], hostID);
 			});
 
-			self.addEventListener("error", (e) => {
+			_self.addEventListener("error", (e) => {
 				logError(e.error);
 
 				// Just send to first host, so as to not duplicate error tracking
@@ -52,15 +54,16 @@ export class PWBWorker extends PWBBase {
 			});
 		} else {
 			this._sharedWorker = false;
+			const _self = self as DedicatedWorkerGlobalScope;
 
-			self.addEventListener("message", this._onMessage);
+			_self.addEventListener("message", this._onMessage);
 
 			// Since this is not a Shared Worker, hostID is always 0 so it's not strictly required to
 			// send this back, but it makes the API a bit more consistent if there is the same
 			// initialization handshake in both cases.
 			this._postMessage([MSGTYPE_HOST_ID, 0], 0);
 
-			self.addEventListener("error", (e) => {
+			_self.addEventListener("error", (e) => {
 				logError(e.error);
 
 				this._postMessage([MSGTYPE_WORKER_ERROR, toFakeError(e.error)]);

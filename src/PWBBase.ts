@@ -7,10 +7,10 @@ import {
 	type QueryMessage,
 } from "./message.ts";
 
-type QueryCallback = (a: unknown, b: number | undefined) => any;
+type QueryCallback = (a: unknown, b: number | undefined) => unknown;
 
 // Inlined from https://github.com/then/is-promise
-const isPromise = (obj: unknown) =>
+const isPromise = (obj: unknown): obj is PromiseLike<unknown> =>
 	!!obj &&
 	(typeof obj === "object" || typeof obj === "function") &&
 	typeof (obj as any).then === "function";
@@ -33,11 +33,15 @@ export const isSharedWorker = (worker: SharedWorker | Worker): worker is SharedW
 	return (worker as SharedWorker).port !== undefined;
 };
 
-export abstract class PWBBase {
+type EventMap = Record<string, Event>;
+
+export abstract class PWBBase<Events extends EventMap> extends EventTarget {
 	protected _callbacks: Map<number, (a: Error | null, b: unknown) => void>;
 	protected _queryCallback: QueryCallback;
 
 	constructor() {
+		super();
+
 		// console.log('constructor', worker);
 		this._callbacks = new Map();
 
@@ -45,6 +49,36 @@ export abstract class PWBBase {
 
 		// @ts-expect-error
 		this._onMessage = this._onMessage.bind(this);
+	}
+
+	override addEventListener<K extends keyof Events>(
+		type: K,
+		listener:
+			| ((event: Events[K]) => void)
+			| {
+					handleEvent(object: Events[K]): void;
+			  }
+			| null,
+		options?: AddEventListenerOptions | boolean,
+	) {
+		super.addEventListener(type as string, listener as EventListener, options);
+	}
+
+	override dispatchEvent<K extends keyof Events>(event: Events[K]) {
+		return super.dispatchEvent(event);
+	}
+
+	override removeEventListener<K extends keyof Events>(
+		type: K,
+		listener:
+			| ((event: Events[K]) => void)
+			| {
+					handleEvent(object: Events[K]): void;
+			  }
+			| null,
+		options?: EventListenerOptions | boolean,
+	) {
+		super.removeEventListener(type as string, listener as EventListener, options);
 	}
 
 	register(cb: QueryCallback) {
@@ -101,11 +135,11 @@ export abstract class PWBBase {
 				this._postResponse(messageID, null, result, hostID);
 			} else {
 				result.then(
-					(finalResult: unknown) => {
+					(finalResult) => {
 						this._postResponse(messageID, null, finalResult, hostID);
 					},
-					(finalError: Error) => {
-						this._postResponse(messageID, finalError, hostID);
+					(finalError) => {
+						this._postResponse(messageID, finalError, undefined, hostID);
 					},
 				);
 			}

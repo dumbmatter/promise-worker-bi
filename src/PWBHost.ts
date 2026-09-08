@@ -10,12 +10,13 @@ import {
 } from "./message.ts";
 import { isSharedWorker, PWBBase } from "./PWBBase.ts";
 
-type ErrorCallback = (a: Error) => void;
-
 let nextMessageID = 0;
 
-export class PWBHost extends PWBBase {
-	private _errorCallback: ErrorCallback | undefined;
+type HostEvents = {
+	error: ErrorEvent;
+};
+
+export class PWBHost extends PWBBase<HostEvents> {
 	private _hostID: number | undefined; // Only defined on host
 	private _hostIDQueue: (() => void)[] | undefined;
 	private _worker: SharedWorker | Worker;
@@ -32,18 +33,6 @@ export class PWBHost extends PWBBase {
 
 		this._worker = worker;
 		this._hostIDQueue = [];
-	}
-
-	registerError(cb: ErrorCallback) {
-		// console.log('registerError', cb);
-		this._errorCallback = cb;
-
-		// Some browsers (Firefox) call onerror on every host, while others
-		// (Chrome) do nothing. Let's disable that everywhere, for consistency.
-		this._worker.addEventListener("error", (e: Event) => {
-			e.preventDefault();
-			e.stopPropagation();
-		});
 	}
 
 	protected _postMessage(
@@ -143,12 +132,8 @@ export class PWBHost extends PWBBase {
 				return new Promise(() => {});
 			});
 		} else if (message[0] === MSGTYPE_WORKER_ERROR) {
-			if (message[1] !== null) {
-				const error = fromFakeError(message[1]);
-				if (this._errorCallback !== undefined) {
-					this._errorCallback(error);
-				}
-			}
+			const error = fromFakeError(message[1]);
+			this.dispatchEvent(new ErrorEvent("error", { error }));
 		}
 	}
 }

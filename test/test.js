@@ -509,9 +509,9 @@ describe("worker -> host", () => {
 			);
 			const promiseWorker = new PWBHost(worker);
 
-			promiseWorker.registerError((e) => {
-				assert(e.message.indexOf("error-outside-response") >= 0);
-				assert(e.stack.indexOf("error-outside-response") >= 0);
+			promiseWorker.addEventListener("error", ({ error }) => {
+				assert(error.message.indexOf("error-outside-response") >= 0);
+				assert(error.stack.indexOf("error-outside-response") >= 0);
 				resolve();
 			});
 		});
@@ -647,9 +647,9 @@ describe("Shared Worker", () => {
 			);
 			const promiseWorker = new PWBHost(worker);
 
-			promiseWorker.registerError((e) => {
-				assert(e.message.indexOf("error-outside-response") >= 0);
-				assert(e.stack.indexOf("error-outside-response") >= 0);
+			promiseWorker.addEventListener("error", ({ error }) => {
+				assert(error.message.indexOf("error-outside-response") >= 0);
+				assert(error.stack.indexOf("error-outside-response") >= 0);
 				resolve();
 			});
 		});
