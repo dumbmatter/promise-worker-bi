@@ -1,3 +1,9 @@
+# Dev
+
+There's no perfect way to know which tabs are open in a SharedWorker because the API doesn't have any event for when a tab closes. Previously promise-worker-bi was using the "beforeunload" event to detect a closing tab, but that has some false negatives, and also was conflucing with apps that used "beforeunload" for their own purposes.
+
+Instead, it now uses the Web Locks API similar to [this](https://github.com/whatwg/html/issues/1766#issuecomment-633197720) which avoids the problems of "beforeunload"... but possibly brings along new problems, we will see!
+
 # v5.0.2, 2026-03-11
 
 Don't include tests with npm package, which significantly reduces its size.
