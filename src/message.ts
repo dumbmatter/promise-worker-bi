@@ -1,5 +1,3 @@
-import { isFakeError, type FakeError } from "./fakeError.ts";
-
 export const MSGTYPE_QUERY = 0;
 export const MSGTYPE_RESPONSE = 1;
 export const MSGTYPE_HOST_ID = 2;
@@ -10,11 +8,11 @@ export type QueryMessage =
 	| [typeof MSGTYPE_QUERY, number, unknown]
 	| [typeof MSGTYPE_QUERY, number, unknown, number | undefined];
 export type ResponseMessage =
-	| [typeof MSGTYPE_RESPONSE, number, FakeError]
+	| [typeof MSGTYPE_RESPONSE, number, Error]
 	| [typeof MSGTYPE_RESPONSE, number, null, unknown];
 export type HostIdMessage = [typeof MSGTYPE_HOST_ID, number];
 export type HostLockMessage = [typeof MSGTYPE_HOST_LOCK, number, string];
-export type WorkerErrorMessage = [typeof MSGTYPE_WORKER_ERROR, FakeError];
+export type WorkerErrorMessage = [typeof MSGTYPE_WORKER_ERROR, Error];
 
 export type Message =
 	| QueryMessage
@@ -22,6 +20,14 @@ export type Message =
 	| HostIdMessage
 	| HostLockMessage
 	| WorkerErrorMessage;
+
+const isError = (error: unknown): error is Error => {
+	if (Error.isError) {
+		return Error.isError(error);
+	}
+
+	return true;
+};
 
 export const parseMessage = (message: unknown) => {
 	if (!Array.isArray(message) || message.length < 2 || message.length > 4) {
@@ -44,7 +50,7 @@ export const parseMessage = (message: unknown) => {
 		if (typeof message[1] !== "number") {
 			throw new Error("Invalid messageID");
 		}
-		if (message[2] !== null && !isFakeError(message[2])) {
+		if (message[2] !== null && !isError(message[2])) {
 			throw new Error("Invalid error");
 		}
 		return message as ResponseMessage;
@@ -68,7 +74,7 @@ export const parseMessage = (message: unknown) => {
 	}
 
 	if (type === MSGTYPE_WORKER_ERROR) {
-		if (!isFakeError(message[1])) {
+		if (!isError(message[1])) {
 			throw new Error("Invalid error");
 		}
 		return message as WorkerErrorMessage;

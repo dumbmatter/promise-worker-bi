@@ -1,6 +1,5 @@
 /// <reference lib="webworker" />
 
-import { toFakeError } from "./fakeError.ts";
 import {
 	MSGTYPE_HOST_ID,
 	MSGTYPE_HOST_LOCK,
@@ -50,7 +49,7 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 				const hostID = this._hosts.keys().next().value;
 
 				if (hostID !== undefined) {
-					this._postMessage([MSGTYPE_WORKER_ERROR, toFakeError(e.error)], hostID);
+					this._postMessage([MSGTYPE_WORKER_ERROR, e.error], hostID);
 				}
 			});
 		} else {
@@ -68,7 +67,7 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 				logError(e.error);
 				e.preventDefault();
 
-				this._postMessage([MSGTYPE_WORKER_ERROR, toFakeError(e.error)]);
+				this._postMessage([MSGTYPE_WORKER_ERROR, e.error]);
 			});
 		}
 	}

@@ -140,7 +140,7 @@ const response1 = await promiseWorker.postMessage({
 });
 
 const response2 = await promiseWorker.postMessage({
-	type: "en",
+	type: "fr",
 });
 ```
 
@@ -289,9 +289,7 @@ Create a new instance of `PWBHost`, using the given worker.
 
 This should only be called in the browser process, not in a worker.
 
-When an error in your web/shared worker process occurs that is _not_ directly in response to a `promiseWorker.postMessage` call, it will be sent to the callback you provide here to `promiseWorker.registerError`.
-
-Although [normally stack traces are not sent from the worker to the main thread](https://github.com/mknichel/javascript-errors/blob/master/README.md#dedicated-workers), promise-worker-bi magically works around this problem so you will see a stack trace in `error`.
+When an error in your web/shared worker process occurs that is _not_ directly in response to a `promiseWorker.postMessage` call, you can see it by listening to the "error" event herer.
 
 ### Worker bundle
 

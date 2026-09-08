@@ -1,4 +1,3 @@
-import { fromFakeError, toFakeError } from "./fakeError.ts";
 import {
 	MSGTYPE_QUERY,
 	MSGTYPE_RESPONSE,
@@ -103,7 +102,7 @@ export abstract class PWBBase<Events extends EventMap> extends EventTarget {
 		if (error) {
 			logError(error);
 
-			this._postMessage([MSGTYPE_RESPONSE, messageID, toFakeError(error)], hostID);
+			this._postMessage([MSGTYPE_RESPONSE, messageID, error], hostID);
 		} else {
 			// Hackily identify when message contains transferable objects
 			if (
@@ -161,7 +160,7 @@ export abstract class PWBBase<Events extends EventMap> extends EventTarget {
 		}
 		if (message[0] === MSGTYPE_RESPONSE) {
 			const messageID = message[1];
-			const error: Error | null = message[2] === null ? null : fromFakeError(message[2]);
+			const error: Error | null = message[2] === null ? null : message[2];
 
 			const callback = this._callbacks.get(messageID);
 

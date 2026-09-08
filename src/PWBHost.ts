@@ -1,4 +1,3 @@
-import { fromFakeError } from "./fakeError.ts";
 import {
 	MSGTYPE_HOST_ID,
 	MSGTYPE_HOST_LOCK,
@@ -133,7 +132,7 @@ export class PWBHost extends PWBBase<HostEvents> {
 			});
 		} else if (message[0] === MSGTYPE_WORKER_ERROR) {
 			// Why all this complicated error stuff rather than adding a listener on this._worker for the "error" event? Some browsers (Firefox) call  on every host, while others (Chrome) don't. So for consistency, handle it on my own.
-			const error = fromFakeError(message[1]);
+			const error = message[1];
 			this.dispatchEvent(new ErrorEvent("error", { error }));
 		}
 	}
