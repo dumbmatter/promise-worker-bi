@@ -289,7 +289,9 @@ Create a new instance of `PWBHost`, using the given worker.
 
 This should only be called in the browser process, not in a worker.
 
-When an error in your web/shared worker process occurs that is _not_ directly in response to a `promiseWorker.postMessage` call, you can see it by listening to the "error" event herer.
+When an error in your web/shared worker process occurs that is _not_ directly in response to a `promiseWorker.postMessage` call, you can see it by listening to the "error" event here.
+
+`promiseWorker` is EventTarget so you can use `addEventListener`, `removeEventListener`, and all their normal options.
 
 ### Worker bundle
 
