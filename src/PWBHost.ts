@@ -147,9 +147,12 @@ export class PWBHost extends PWBBase {
 			const lockId = `pwb-${Math.random()}`;
 
 			navigator.locks.request(lockId, async () => {
-				console.log(`Lock ${lockId} acquired on host ${hostID}`);
+				// console.log(`Lock ${lockId} acquired on host ${hostID}`);
 
 				this._postMessage([MSGTYPE_HOST_LOCK, hostID, lockId]);
+
+				// Hold this lock until this tab closes
+				return new Promise(() => {});
 			});
 		} else if (message[0] === MSGTYPE_WORKER_ERROR) {
 			if (message[1] !== null) {

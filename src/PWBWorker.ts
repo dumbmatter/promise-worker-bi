@@ -14,15 +14,11 @@ import { logError, PWBBase } from "./PWBBase.ts";
 let nextMessageID = 0;
 
 export class PWBWorker extends PWBBase {
-	private _hosts: Map<number, { port: MessagePort }>;
-	private _maxHostID: number;
+	private _hosts = new Map<number, { port: MessagePort }>();
+	private _maxHostID = -1;
 
 	constructor() {
 		super();
-
-		// Only actually used for SharedWorker
-		this._hosts = new Map();
-		this._maxHostID = -1;
 
 		if (
 			// @ts-expect-error
@@ -133,8 +129,8 @@ export class PWBWorker extends PWBBase {
 		}
 
 		if (message[0] === MSGTYPE_HOST_LOCK) {
-			navigator.locks.request(message[2], async () => {
-				console.log(`Lock ${message[2]} acquired on host ${message[1]}`);
+			navigator.locks.request(message[2], () => {
+				// console.log(`Lock ${message[2]} acquired on host ${message[1]}`);
 
 				// If hosts.size is ever 1  here, that means there are no tabs left, so either something went horribly wrong (would rather not delete the last host then, in case it's still alive) or the last tab is closing (and the worker will automatically be killed soon)
 				if (this._hosts.size > 1) {
