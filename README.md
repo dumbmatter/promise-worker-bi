@@ -119,8 +119,8 @@ For a Web Worker, we could just use [the normal `error` event](https://developer
 Therefore, promise-worker-bi includes a unified API that works in Web Workers and Shared Workers. Include some code like this in your host:
 
 ```js
-promiseWorker.registerError((error) => {
-	console.log("Error inside worker!", err);
+promiseWorker.addEventListener("error", (errorError) => {
+	console.log("Error inside worker!", errorError.error);
 });
 ```
 
@@ -285,9 +285,9 @@ Create a new instance of `PWBHost`, using the given worker.
 
 - `worker` - the `Worker`, `SharedWorker` or [PseudoWorker](https://github.com/nolanlawson/pseudo-worker) to use.
 
-#### `promiseWorker.registerError((error: Error) => void)`
+#### `promiseWorker.addEventListener("error", (event: ErrorEvent) => void)`
 
-This should only be called in the browser, not in a worker.
+This should only be called in the browser process, not in a worker.
 
 When an error in your web/shared worker process occurs that is _not_ directly in response to a `promiseWorker.postMessage` call, it will be sent to the callback you provide here to `promiseWorker.registerError`.
 

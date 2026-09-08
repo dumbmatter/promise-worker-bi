@@ -17,7 +17,7 @@ const isPromise = (obj: unknown): obj is PromiseLike<unknown> =>
 
 export const logError = (err: Error) => {
 	// Logging in the console makes debugging in the worker easier
-	console.error("Error in Worker:");
+	console.error("Error in worker:");
 	console.error(err); // Safari needs it on new line
 };
 

@@ -44,6 +44,7 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 
 			_self.addEventListener("error", (e) => {
 				logError(e.error);
+				e.preventDefault();
 
 				// Just send to first host, so as to not duplicate error tracking
 				const hostID = this._hosts.keys().next().value;
@@ -65,6 +66,7 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 
 			_self.addEventListener("error", (e) => {
 				logError(e.error);
+				e.preventDefault();
 
 				this._postMessage([MSGTYPE_WORKER_ERROR, toFakeError(e.error)]);
 			});
