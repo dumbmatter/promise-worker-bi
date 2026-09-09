@@ -4,35 +4,36 @@ import type { BrowserCommandContext } from "vitest/node";
 import type { Page } from "playwright";
 
 const makeTestWithTwoPages =
+	// ExtraWindowProps is really hacky - we want it to show up only inside things like page.evaluate callback functions, but we're tricking TypeScript into thinking it gets `window` from a closure.
 	<ExtraWindowProps>() =>
-	<Output>(
-		htmlFilename: string,
-		cb: (x: {
-			htmlUrl: string;
-			page1: Page;
-			page2: Page;
-			window: typeof window & ExtraWindowProps;
-		}) => Promise<Output>,
-	) => {
-		return async (ctx: BrowserCommandContext) => {
-			if (ctx.provider.name !== "playwright") {
-				throw new Error("Requires playwright");
-			}
-			const { context } = ctx;
+		<Output>(
+			htmlFilename: string,
+			cb: (x: {
+				htmlUrl: string;
+				page1: Page;
+				page2: Page;
+				window: typeof window & ExtraWindowProps;
+			}) => Promise<Output>,
+		) => {
+			return async (ctx: BrowserCommandContext) => {
+				if (ctx.provider.name !== "playwright") {
+					throw new Error("Requires playwright");
+				}
+				const { context } = ctx;
 
-			const htmlUrl = new URL(`/test/${htmlFilename}`, ctx.page.url()).toString();
+				const htmlUrl = new URL(`/test/${htmlFilename}`, ctx.page.url()).toString();
 
-			const page1 = await context.newPage();
-			const page2 = await context.newPage();
+				const page1 = await context.newPage();
+				const page2 = await context.newPage();
 
-			try {
-				return await cb({ htmlUrl, page1, page2, window: window as any });
-			} finally {
-				await page1.close().catch(() => {});
-				await page2.close().catch(() => {});
-			}
+				try {
+					return await cb({ htmlUrl, page1, page2, window: undefined as any });
+				} finally {
+					await page1.close().catch(() => {});
+					await page2.close().catch(() => {});
+				}
+			};
 		};
-	};
 
 const testSharedWorkerClose = makeTestWithTwoPages<{
 	testClient: {
