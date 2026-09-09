@@ -2,9 +2,49 @@ import { defineConfig } from "vitest/config";
 import { playwright } from "@vitest/browser-playwright";
 import type { BrowserCommandContext } from "vitest/node";
 
+const testSharedWorkerErrorOutsideResponse = async (ctx: BrowserCommandContext) => {
+	if (ctx.provider.name !== "playwright") {
+		throw new Error("Requires playwright");
+	}
+
+	const { context } = ctx;
+
+	const baseUrl = new URL(
+		"/test/shared-worker-error-outside-response.html",
+		ctx.page.url(),
+	).toString();
+
+	const page1 = await context.newPage();
+	const page2 = await context.newPage();
+
+	try {
+		await page1.goto(baseUrl);
+		await page1.waitForFunction(() => "testClient" in window);
+
+		await page2.goto(baseUrl);
+		await page2.waitForFunction(() => "testClient" in window);
+
+		// Wait for error
+		await page1.waitForTimeout(1500);
+
+		const error1 = (await page1.evaluate(() => (window as any).testClient.error)) as
+			| Error
+			| undefined;
+
+		const error2 = (await page2.evaluate(() => (window as any).testClient.error)) as
+			| Error
+			| undefined;
+
+		return { error1, error2 };
+	} finally {
+		await page1.close().catch(() => {});
+		await page2.close().catch(() => {});
+	}
+};
+
 const testSharedWorkerTabClose = async (ctx: BrowserCommandContext) => {
 	if (ctx.provider.name !== "playwright") {
-		throw new Error("testSharedWorker requires the Playwright provider");
+		throw new Error("Requires playwright");
 	}
 
 	const { context } = ctx;
@@ -46,6 +86,7 @@ const testSharedWorkerTabClose = async (ctx: BrowserCommandContext) => {
 
 declare module "vitest/browser" {
 	interface BrowserCommands {
+		testSharedWorkerErrorOutsideResponse(): ReturnType<typeof testSharedWorkerErrorOutsideResponse>;
 		testSharedWorkerTabClose(): ReturnType<typeof testSharedWorkerTabClose>;
 	}
 }
@@ -59,6 +100,7 @@ export default defineConfig({
 			instances: [{ browser: "chromium" }, { browser: "firefox" }, { browser: "webkit" }],
 			screenshotFailures: false,
 			commands: {
+				testSharedWorkerErrorOutsideResponse,
 				testSharedWorkerTabClose,
 			},
 		},

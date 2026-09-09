@@ -159,7 +159,7 @@ describe("host -> worker", () => {
 			(err) => {
 				assert.equal(err.message, "oh noes");
 				// Chrome puts it in the stack, but other browsers don't
-				//assert(err.stack.indexOf("oh noes") >= 0);
+				//assert(err.stack.includes("oh noes"));
 			},
 		);
 	});
@@ -511,8 +511,8 @@ describe("worker -> host", () => {
 			const promiseWorker = new PWBHost(worker);
 
 			promiseWorker.addEventListener("error", ({ error }) => {
-				assert(error.message.indexOf("error-outside-response") >= 0);
-				assert(error.stack.indexOf("error-outside-response") >= 0);
+				assert(error.message.includes("error-outside-response"));
+				assert(error.stack.includes("error-outside-response"));
 				resolve();
 			});
 		});
@@ -649,20 +649,27 @@ describe("Shared Worker", () => {
 			const promiseWorker = new PWBHost(worker);
 
 			promiseWorker.addEventListener("error", ({ error }) => {
-				assert(error.message.indexOf("error-outside-response") >= 0);
-				assert(error.stack.indexOf("error-outside-response") >= 0);
+				assert.equal(error.name, "Error");
+				assert.equal(error.message, "error-outside-response");
+				assert(error.stack.includes("error-outside-response"));
 				resolve();
 			});
 		});
 	});
 
-	it.skip("handles errors outside of responses with two tabs");
+	it("handles errors outside of responses with two tabs (only report to first tab)", async () => {
+		const { error1, error2 } = await commands.testSharedWorkerErrorOutsideResponse();
+		assert.equal(error2, undefined);
+		assert.equal(error1.name, "Error");
+		assert.equal(error1.message, "error-outside-response");
+		assert(error1.stack.includes("error-outside-response"));
+	});
 
 	it("worker sees tab close", async () => {
 		const { numHosts1, numHosts2, numHostsAfterClose } = await commands.testSharedWorkerTabClose();
-		assert.strictEqual(numHosts1, 1);
-		assert.strictEqual(numHosts2, 2);
-		assert.strictEqual(numHostsAfterClose, 1);
+		assert.equal(numHosts1, 1);
+		assert.equal(numHosts2, 2);
+		assert.equal(numHostsAfterClose, 1);
 	});
 });
 
