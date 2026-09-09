@@ -5,14 +5,14 @@ export const MSGTYPE_HOST_LOCK = 3;
 export const MSGTYPE_WORKER_ERROR = 4;
 
 export type QueryMessage =
-	| [typeof MSGTYPE_QUERY, number, unknown]
-	| [typeof MSGTYPE_QUERY, number, unknown, number | undefined];
+	| [type: typeof MSGTYPE_QUERY, messageId: number, query: unknown]
+	| [type: typeof MSGTYPE_QUERY, messageId: number, query: unknown, hostId: number | undefined];
 export type ResponseMessage =
-	| [typeof MSGTYPE_RESPONSE, number, Error]
-	| [typeof MSGTYPE_RESPONSE, number, null, unknown];
-export type HostIdMessage = [typeof MSGTYPE_HOST_ID, number];
-export type HostLockMessage = [typeof MSGTYPE_HOST_LOCK, number, string];
-export type WorkerErrorMessage = [typeof MSGTYPE_WORKER_ERROR, Error];
+	| [type: typeof MSGTYPE_RESPONSE, messageId: number, error: Error]
+	| [type: typeof MSGTYPE_RESPONSE, messageId: number, error: null, result: unknown];
+export type HostIdMessage = [type: typeof MSGTYPE_HOST_ID, hostId: number];
+export type HostLockMessage = [type: typeof MSGTYPE_HOST_LOCK, hostID: number, hostLockId: string];
+export type WorkerErrorMessage = [type: typeof MSGTYPE_WORKER_ERROR, error: Error];
 
 export type Message =
 	| QueryMessage
@@ -68,7 +68,7 @@ export const parseMessage = (message: unknown) => {
 			throw new Error("Invalid hostID");
 		}
 		if (typeof message[2] !== "string") {
-			throw new Error("Invalid lockId");
+			throw new Error("Invalid hostLockId");
 		}
 		return message as HostLockMessage;
 	}

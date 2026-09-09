@@ -120,12 +120,12 @@ export class PWBHost extends PWBBase<HostEvents> {
 			// Use Web Locks API to work around the lack of a native way for the worker to know when the tab has closed. Worker will request a lock, and only get it when the tab is closed. Previously this used the "beforeunload" event but that is not guaranteed to fire and also caused problems when an app using promise-worker-bi wanted to use "beforeunload" to let the user cancel closing the tab.
 
 			// Don't assume hostID is unique, could be two instances of this library with different workers
-			const lockId = `pwb-${Math.random()}`;
+			const hostLockId = `pwb-host-${Math.random()}`;
 
-			navigator.locks.request(lockId, async () => {
-				// console.log(`Lock ${lockId} acquired on host ${hostID}`);
+			navigator.locks.request(hostLockId, async () => {
+				// console.log(`Lock ${hostLockId} acquired on host ${hostID}`);
 
-				this._postMessage([MSGTYPE_HOST_LOCK, hostID, lockId]);
+				this._postMessage([MSGTYPE_HOST_LOCK, hostID, hostLockId]);
 
 				// Hold this lock until this tab closes
 				return new Promise(() => {});
