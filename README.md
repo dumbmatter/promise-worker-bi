@@ -287,9 +287,13 @@ Create a new instance of `PWBHost`, using the given worker.
 
 #### `promiseWorker.addEventListener("error", (event: ErrorEvent) => void)`
 
-This should only be called in the browser process, not in a worker.
-
 When an error in your web/shared worker process occurs that is _not_ directly in response to a `promiseWorker.postMessage` call, you can see it by listening to the "error" event here.
+
+`promiseWorker` is EventTarget so you can use `addEventListener`, `removeEventListener`, and all their normal options.
+
+#### `promiseWorker.addEventListener("close", (event: Event) => void)`
+
+There is no built-in API to listen for when a web/shared worker closes, which can happen in various situations such as the OS killing it to free up memory. promise-worker-bi includes a "close" event you can use for this purpose.
 
 `promiseWorker` is EventTarget so you can use `addEventListener`, `removeEventListener`, and all their normal options.
 

@@ -12,14 +12,8 @@ import { isSharedWorker, PWBBase } from "./PWBBase.ts";
 
 let nextMessageID = 0;
 
-class WorkerCloseEvent extends Event {
-	constructor() {
-		super("close");
-	}
-}
-
 type HostEvents = {
-	close: WorkerCloseEvent;
+	close: Event;
 	error: ErrorEvent;
 };
 
@@ -111,7 +105,7 @@ export class PWBHost extends PWBBase<HostEvents> {
 			async () => {
 				// console.log(`Lock ${workerLockId} acquired from worker`);
 
-				this.dispatchEvent(new WorkerCloseEvent());
+				this.dispatchEvent(new Event("close"));
 			},
 		);
 	}

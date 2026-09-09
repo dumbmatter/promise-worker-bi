@@ -4,4 +4,4 @@ new PWBWorker();
 
 setTimeout(() => {
 	throw new Error("error-outside-response");
-}, 1000);
+}, 500);

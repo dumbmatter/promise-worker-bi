@@ -41,9 +41,10 @@ const testSharedWorkerClose = makeTestWithTwoPages<{
 		terminateWorker: () => void;
 	};
 }>()("shared-worker-close.html", async ({ htmlUrl, page1, page2, window }) => {
-	await Promise.all([page1.goto(htmlUrl), page2.goto(htmlUrl)]);
-	await page1.waitForFunction(() => window.testClient !== undefined);
-	await page2.waitForFunction(() => window.testClient !== undefined);
+	await Promise.all([
+		page1.goto(htmlUrl, { waitUntil: "load" }),
+		page2.goto(htmlUrl, { waitUntil: "load" }),
+	]);
 
 	const before1 = await page1.evaluate(() => window.testClient.closed);
 	const before2 = await page1.evaluate(() => window.testClient.closed);
@@ -66,17 +67,13 @@ const testSharedWorkerErrorOutsideResponse = makeTestWithTwoPages<{
 		error: Error | undefined;
 	};
 }>()("shared-worker-error-outside-response.html", async ({ htmlUrl, page1, page2, window }) => {
-	await page1.goto(htmlUrl);
-	await page1.waitForFunction(() => window.testClient !== undefined);
-
-	await page2.goto(htmlUrl);
-	await page2.waitForFunction(() => window.testClient !== undefined);
+	await page1.goto(htmlUrl, { waitUntil: "load" });
+	await page2.goto(htmlUrl, { waitUntil: "load" });
 
 	// Wait for error
-	await page1.waitForTimeout(1500);
+	await page1.waitForTimeout(1000);
 
 	const error1 = await page1.evaluate(() => window.testClient.error);
-
 	const error2 = await page2.evaluate(() => window.testClient.error);
 
 	return { error1, error2 };
@@ -87,14 +84,10 @@ const testSharedWorkerTabClose = makeTestWithTwoPages<{
 		getNumHosts: () => number;
 	};
 }>()("shared-worker-tab-close.html", async ({ htmlUrl, page1, page2, window }) => {
-	await page1.goto(htmlUrl);
-	await page1.waitForFunction(() => window.testClient !== undefined);
-
+	await page1.goto(htmlUrl, { waitUntil: "load" });
 	const numHosts1 = await page1.evaluate(() => window.testClient.getNumHosts());
 
-	await page2.goto(htmlUrl);
-	await page2.waitForFunction(() => window.testClient !== undefined);
-
+	await page2.goto(htmlUrl, { waitUntil: "load" });
 	const numHosts2 = await page2.evaluate(() => window.testClient.getNumHosts());
 
 	await page2.close();
