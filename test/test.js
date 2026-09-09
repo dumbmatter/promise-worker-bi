@@ -728,3 +728,22 @@ describe("transferable", () => {
 		});
 	});
 });
+
+describe("close event", () => {
+	it("Web Worker", () => {
+		return new Promise((resolve) => {
+			const worker = new Worker(new URL("./worker-echo.js", import.meta.url), {
+				type: "module",
+			});
+			const promiseWorker = new PWBHost(worker);
+			promiseWorker.addEventListener("close", () => {
+				resolve();
+			});
+
+			// Wait a bit to make sure communication between host and worker is established
+			setTimeout(() => {
+				worker.terminate();
+			}, 100);
+		});
+	});
+});

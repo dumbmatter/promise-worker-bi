@@ -3,6 +3,7 @@ import {
 	MSGTYPE_HOST_LOCK,
 	MSGTYPE_QUERY,
 	MSGTYPE_WORKER_ERROR,
+	MSGTYPE_WORKER_LOCK,
 	type HostLockMessage,
 	type QueryMessage,
 	type ResponseMessage,
@@ -11,7 +12,14 @@ import { isSharedWorker, PWBBase } from "./PWBBase.ts";
 
 let nextMessageID = 0;
 
+class WorkerCloseEvent extends Event {
+	constructor() {
+		super("close");
+	}
+}
+
 type HostEvents = {
+	close: WorkerCloseEvent;
 	error: ErrorEvent;
 };
 
@@ -93,6 +101,21 @@ export class PWBHost extends PWBBase<HostEvents> {
 		});
 	}
 
+	private handleWorkerLock(workerLockId: string) {
+		// Worker already has this lock, so if we ever get it, that means the worker has died somehow. Request shared so all tabs get it at once
+		navigator.locks.request(
+			workerLockId,
+			{
+				mode: "shared",
+			},
+			async () => {
+				// console.log(`Lock ${workerLockId} acquired from worker`);
+
+				this.dispatchEvent(new WorkerCloseEvent());
+			},
+		);
+	}
+
 	private _onMessage(e: MessageEvent) {
 		const message = this._onMessageCommon(e);
 		if (!message) {
@@ -117,6 +140,10 @@ export class PWBHost extends PWBBase<HostEvents> {
 				this._hostIDQueue = undefined; // Never needed again after initial setup
 			}
 
+			if (message[2] !== undefined) {
+				this.handleWorkerLock(message[2]);
+			}
+
 			// Use Web Locks API to work around the lack of a native way for the worker to know when the tab has closed. Worker will request a lock, and only get it when the tab is closed. Previously this used the "beforeunload" event but that is not guaranteed to fire and also caused problems when an app using promise-worker-bi wanted to use "beforeunload" to let the user cancel closing the tab.
 
 			// Don't assume hostID is unique, could be two instances of this library with different workers
@@ -134,6 +161,8 @@ export class PWBHost extends PWBBase<HostEvents> {
 			// Why all this complicated error stuff rather than adding a listener on this._worker for the "error" event? Some browsers (Firefox) call  on every host, while others (Chrome) don't. So for consistency, handle it on my own.
 			const error = message[1];
 			this.dispatchEvent(new ErrorEvent("error", { error }));
+		} else if (message[0] === MSGTYPE_WORKER_LOCK) {
+			this.handleWorkerLock(message[1]);
 		}
 	}
 }

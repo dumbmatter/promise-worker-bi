@@ -5,10 +5,12 @@ import {
 	MSGTYPE_HOST_LOCK,
 	MSGTYPE_QUERY,
 	MSGTYPE_WORKER_ERROR,
+	MSGTYPE_WORKER_LOCK,
 	type HostIdMessage,
 	type QueryMessage,
 	type ResponseMessage,
 	type WorkerErrorMessage,
+	type WorkerLockMessage,
 } from "./message.ts";
 import { logError, PWBBase } from "./PWBBase.ts";
 
@@ -20,9 +22,24 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 	private _hosts = new Map<number, { port: MessagePort }>();
 	private _maxHostID = -1;
 	private _sharedWorker: boolean;
+	private _workerLockAcquired = false;
 
 	constructor() {
 		super();
+
+		const workerLockId = `pwb-worker-${Math.random()}`;
+
+		navigator.locks.request(workerLockId, async () => {
+			// console.log(`Lock ${workerLockId} acquired on worker`);
+
+			this._workerLockAcquired = true;
+
+			// Any hosts that exist at the time the lock is acquired need to be told about it, so they can start listening
+			this._postMessage([MSGTYPE_WORKER_LOCK, workerLockId]);
+
+			// Hold this lock until this worker closes
+			return new Promise(() => {});
+		});
 
 		if (typeof SharedWorkerGlobalScope !== "undefined" && self instanceof SharedWorkerGlobalScope) {
 			this._sharedWorker = true;
@@ -38,7 +55,14 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 				this._hosts.set(hostID, { port });
 
 				// Send back hostID to this host, otherwise it has no way to know it
-				this._postMessage([MSGTYPE_HOST_ID, hostID], hostID);
+				let message: HostIdMessage;
+				if (this._workerLockAcquired) {
+					// Worker lock is already acquired, so no need for a separate message to tell the host about it
+					message = [MSGTYPE_HOST_ID, hostID, workerLockId];
+				} else {
+					message = [MSGTYPE_HOST_ID, hostID];
+				}
+				this._postMessage(message, hostID);
 			});
 
 			_self.addEventListener("error", (e) => {
@@ -73,7 +97,12 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 	}
 
 	protected _postMessage(
-		message: QueryMessage | ResponseMessage | HostIdMessage | WorkerErrorMessage,
+		message:
+			| QueryMessage
+			| ResponseMessage
+			| HostIdMessage
+			| WorkerLockMessage
+			| WorkerErrorMessage,
 		targetHostID?: number | undefined,
 		transfer?: Transferable[] | undefined,
 	) {
@@ -137,7 +166,7 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 
 		if (message[0] === MSGTYPE_HOST_LOCK) {
 			navigator.locks.request(message[2], () => {
-				// console.log(`Lock ${message[2]} acquired on host ${message[1]}`);
+				// console.log(`Lock ${message[2]} acquired from host ${message[1]}`);
 
 				// If hosts.size is ever 1  here, that means there are no tabs left, so either something went horribly wrong (would rather not delete the last host then, in case it's still alive) or the last tab is closing (and the worker will automatically be killed soon)
 				if (this._hosts.size > 1) {
