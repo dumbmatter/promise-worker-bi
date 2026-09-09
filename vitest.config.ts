@@ -1,20 +1,36 @@
 import { defineConfig } from "vitest/config";
 import { playwright } from "@vitest/browser-playwright";
 import type { BrowserCommandContext } from "vitest/node";
+import type { Page } from "playwright";
 
-const testSharedWorkerClose = async (ctx: BrowserCommandContext) => {
-	if (ctx.provider.name !== "playwright") {
-		throw new Error("Requires playwright");
-	}
-	const { context } = ctx;
+const makeTestWithTwoPages = <T>(
+	htmlFilename: string,
+	cb: (x: { htmlUrl: string; page1: Page; page2: Page }) => Promise<T>,
+) => {
+	return async (ctx: BrowserCommandContext) => {
+		if (ctx.provider.name !== "playwright") {
+			throw new Error("Requires playwright");
+		}
+		const { context } = ctx;
 
-	const baseUrl = new URL("/test/shared-worker-close.html", ctx.page.url()).toString();
+		const htmlUrl = new URL(`/test/${htmlFilename}`, ctx.page.url()).toString();
 
-	const page1 = await context.newPage();
-	const page2 = await context.newPage();
+		const page1 = await context.newPage();
+		const page2 = await context.newPage();
 
-	try {
-		await Promise.all([page1.goto(baseUrl), page2.goto(baseUrl)]);
+		try {
+			return await cb({ htmlUrl, page1, page2 });
+		} finally {
+			await page1.close().catch(() => {});
+			await page2.close().catch(() => {});
+		}
+	};
+};
+
+const testSharedWorkerClose = makeTestWithTwoPages(
+	"shared-worker-close.html",
+	async ({ htmlUrl, page1, page2 }) => {
+		await Promise.all([page1.goto(htmlUrl), page2.goto(htmlUrl)]);
 		await page1.waitForFunction(() => "testClient" in window);
 		await page2.waitForFunction(() => "testClient" in window);
 
@@ -28,32 +44,18 @@ const testSharedWorkerClose = async (ctx: BrowserCommandContext) => {
 
 		const after1 = (await page1.evaluate(() => (window as any).testClient.closed)) as boolean;
 		const after2 = (await page1.evaluate(() => (window as any).testClient.closed)) as boolean;
+
 		return { after1, after2, before1, before2 };
-	} finally {
-		await page1.close().catch(() => {});
-		await page2.close().catch(() => {});
-	}
-};
+	},
+);
 
-const testSharedWorkerErrorOutsideResponse = async (ctx: BrowserCommandContext) => {
-	if (ctx.provider.name !== "playwright") {
-		throw new Error("Requires playwright");
-	}
-	const { context } = ctx;
-
-	const baseUrl = new URL(
-		"/test/shared-worker-error-outside-response.html",
-		ctx.page.url(),
-	).toString();
-
-	const page1 = await context.newPage();
-	const page2 = await context.newPage();
-
-	try {
-		await page1.goto(baseUrl);
+const testSharedWorkerErrorOutsideResponse = makeTestWithTwoPages(
+	"shared-worker-error-outside-response.html",
+	async ({ htmlUrl, page1, page2 }) => {
+		await page1.goto(htmlUrl);
 		await page1.waitForFunction(() => "testClient" in window);
 
-		await page2.goto(baseUrl);
+		await page2.goto(htmlUrl);
 		await page2.waitForFunction(() => "testClient" in window);
 
 		// Wait for error
@@ -68,32 +70,20 @@ const testSharedWorkerErrorOutsideResponse = async (ctx: BrowserCommandContext) 
 			| undefined;
 
 		return { error1, error2 };
-	} finally {
-		await page1.close().catch(() => {});
-		await page2.close().catch(() => {});
-	}
-};
+	},
+);
 
-const testSharedWorkerTabClose = async (ctx: BrowserCommandContext) => {
-	if (ctx.provider.name !== "playwright") {
-		throw new Error("Requires playwright");
-	}
-	const { context } = ctx;
-
-	const baseUrl = new URL("/test/shared-worker-tab-close.html", ctx.page.url()).toString();
-
-	const page1 = await context.newPage();
-	const page2 = await context.newPage();
-
-	try {
-		await page1.goto(baseUrl);
+const testSharedWorkerTabClose = makeTestWithTwoPages(
+	"shared-worker-tab-close.html",
+	async ({ htmlUrl, page1, page2 }) => {
+		await page1.goto(htmlUrl);
 		await page1.waitForFunction(() => "testClient" in window);
 
 		const numHosts1 = (await page1.evaluate(() =>
 			(window as any).testClient.getNumHosts(),
 		)) as number;
 
-		await page2.goto(baseUrl);
+		await page2.goto(htmlUrl);
 		await page2.waitForFunction(() => "testClient" in window);
 
 		const numHosts2 = (await page2.evaluate(() =>
@@ -108,12 +98,10 @@ const testSharedWorkerTabClose = async (ctx: BrowserCommandContext) => {
 		const numHostsAfterClose = (await page1.evaluate(() =>
 			(window as any).testClient.getNumHosts(),
 		)) as number;
+
 		return { numHosts1, numHosts2, numHostsAfterClose };
-	} finally {
-		await page1.close().catch(() => {});
-		await page2.close().catch(() => {});
-	}
-};
+	},
+);
 
 declare module "vitest/browser" {
 	interface BrowserCommands {
