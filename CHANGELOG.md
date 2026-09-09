@@ -6,7 +6,24 @@ There's no perfect way to know which tabs are open in a SharedWorker because the
 
 Instead, it now uses the Web Locks API similar to [this](https://github.com/whatwg/html/issues/1766#issuecomment-633197720) which avoids the problems of "beforeunload"... but possibly brings along new problems, we will see!
 
-## Error API
+## Events
+
+`promiseWorker` is an EventTarget and you can use the normal EventTarget APIs `addEventListener` and `removeEventListener` for these events on `PWBHost`:
+
+### close
+
+This is a new feature in v6.0.0. It uses the Web Locks API to detect when the worker has closed, since there is no real built-in API for this.
+
+```
+promiseWorker.addEventListener("close", () => {
+  console.log("Something bad happened, worker no longer exists. Reloading...");
+  window.location.reload();
+});
+```
+
+### error
+
+This is a breaking change in v6.0.0.
 
 In the old version:
 
@@ -16,7 +33,7 @@ promiseWorker.registerError((error) => {
 });
 ```
 
-In the new version `promiseWorker` is an EventTarget and you can use the normal EventTarget APIs like:
+In the new version:
 
 ```
 promiseWorker.addEventListener("error", ({ error }) => {
