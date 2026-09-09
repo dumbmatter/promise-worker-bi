@@ -1,4 +1,5 @@
 import { assert, describe, it } from "vitest";
+import { commands } from "vitest/browser";
 import { PWBHost } from "../dist/index.js";
 
 describe("host -> worker", () => {
@@ -653,6 +654,15 @@ describe("Shared Worker", () => {
 				resolve();
 			});
 		});
+	});
+
+	it.skip("handles errors outside of responses with two tabs");
+
+	it("worker sees tab close", async () => {
+		const { numHosts1, numHosts2, numHostsAfterClose } = await commands.testSharedWorkerTabClose();
+		assert.strictEqual(numHosts1, 1);
+		assert.strictEqual(numHosts2, 2);
+		assert.strictEqual(numHostsAfterClose, 1);
 	});
 });
 

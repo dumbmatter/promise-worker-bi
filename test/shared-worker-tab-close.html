@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+	<body>
+		<script type="module">
+			import { PWBHost } from "../dist/index.js";
+			const worker = new SharedWorker("./shared-worker-tab-close.js", {
+				type: "module",
+			});
+			window.promiseWorker = new PWBHost(worker);
+
+			window.testClient = {
+				async getNumHosts() {
+					const numHosts = await promiseWorker.postMessage("getNumHosts");
+					console.log("numHosts", numHosts);
+					return numHosts;
+				},
+			};
+		</script>
+	</body>
+</html>

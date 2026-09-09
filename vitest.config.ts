@@ -1,5 +1,54 @@
 import { defineConfig } from "vitest/config";
 import { playwright } from "@vitest/browser-playwright";
+import type { BrowserCommandContext } from "vitest/node";
+
+const testSharedWorkerTabClose = async (ctx: BrowserCommandContext) => {
+	if (ctx.provider.name !== "playwright") {
+		throw new Error("testSharedWorker requires the Playwright provider");
+	}
+
+	const { context } = ctx;
+
+	const baseUrl = new URL("/test/shared-worker-tab-close.html", ctx.page.url()).toString();
+
+	const page1 = await context.newPage();
+	const page2 = await context.newPage();
+
+	try {
+		await page1.goto(baseUrl);
+		await page1.waitForFunction(() => "testClient" in window);
+
+		const numHosts1 = (await page1.evaluate(() =>
+			(window as any).testClient.getNumHosts(),
+		)) as number;
+
+		await page2.goto(baseUrl);
+		await page2.waitForFunction(() => "testClient" in window);
+
+		const numHosts2 = (await page2.evaluate(() =>
+			(window as any).testClient.getNumHosts(),
+		)) as number;
+
+		await page2.close();
+
+		// Give worker time to notice page2 closed
+		await page1.waitForTimeout(100);
+
+		const numHostsAfterClose = (await page1.evaluate(() =>
+			(window as any).testClient.getNumHosts(),
+		)) as number;
+		return { numHosts1, numHosts2, numHostsAfterClose };
+	} finally {
+		await page1.close().catch(() => {});
+		await page2.close().catch(() => {});
+	}
+};
+
+declare module "vitest/browser" {
+	interface BrowserCommands {
+		testSharedWorkerTabClose(): ReturnType<typeof testSharedWorkerTabClose>;
+	}
+}
 
 export default defineConfig({
 	test: {
@@ -9,6 +58,9 @@ export default defineConfig({
 			provider: playwright(),
 			instances: [{ browser: "chromium" }, { browser: "firefox" }, { browser: "webkit" }],
 			screenshotFailures: false,
+			commands: {
+				testSharedWorkerTabClose,
+			},
 		},
 		include: ["test/test.js"],
 		slowTestThreshold: 5_000,
