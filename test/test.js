@@ -746,4 +746,12 @@ describe("close event", () => {
 			}, 100);
 		});
 	});
+
+	it("Shared Worker", async () => {
+		const { after1, after2, before1, before2 } = await commands.testSharedWorkerClose();
+		assert.equal(before1, false);
+		assert.equal(before2, false);
+		assert.equal(after1, true);
+		assert.equal(after2, true);
+	});
 });

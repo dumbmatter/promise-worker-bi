@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+	<body>
+		<script type="module">
+			import { PWBHost } from "../dist/index.js";
+			const worker = new SharedWorker("./shared-worker-close.js", {
+				type: "module",
+			});
+			const promiseWorker = new PWBHost(worker);
+			promiseWorker.addEventListener("close", () => {
+				window.testClient.closed = true;
+			});
+
+			window.testClient = {
+				terminateWorker: () => {
+					promiseWorker.postMessage("terminate");
+				},
+				closed: false,
+			};
+		</script>
+	</body>
+</html>
