@@ -1,6 +1,6 @@
 import { assert, describe, it } from "vitest";
 import { commands } from "vitest/browser";
-import { PWBHost } from "../dist/index.js";
+import { PWBHost } from "../src/PWBHost.ts";
 
 describe("host -> worker", () => {
 	it("sends a message back and forth", () => {

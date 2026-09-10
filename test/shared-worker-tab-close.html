@@ -2,7 +2,7 @@
 <html>
 	<body>
 		<script type="module">
-			import { PWBHost } from "../dist/index.js";
+			import { PWBHost } from "../src/PWBHost.ts";
 			const worker = new SharedWorker("./shared-worker-tab-close.js", {
 				type: "module",
 			});

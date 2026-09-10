@@ -1,4 +1,4 @@
-import { PWBWorker } from "../dist/index.js";
+import { PWBWorker } from "../src/PWBWorker.ts";
 
 const promiseWorker = new PWBWorker();
 promiseWorker.register((message) => {
