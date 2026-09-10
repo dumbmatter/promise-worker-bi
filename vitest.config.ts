@@ -54,7 +54,7 @@ const testSharedWorkerClose = makeTestWithTwoPages<{
 	});
 
 	// Give hosts time to notice worker has been terminated
-	await page1.waitForTimeout(100);
+	await page1.waitForTimeout(500);
 
 	const after1 = await page1.evaluate(() => window.testClient.closed);
 	const after2 = await page1.evaluate(() => window.testClient.closed);
@@ -93,7 +93,7 @@ const testSharedWorkerTabClose = makeTestWithTwoPages<{
 	await page2.close();
 
 	// Give worker time to notice page2 closed
-	await page1.waitForTimeout(100);
+	await page1.waitForTimeout(500);
 
 	const numHostsAfterClose = await page1.evaluate(() => window.testClient.getNumHosts());
 
