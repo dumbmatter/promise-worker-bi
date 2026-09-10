@@ -192,21 +192,21 @@ describe("host -> worker", () => {
 					worker.removeEventListener("message", onMessage);
 					worker.removeEventListener("error", onError);
 				}
-				function onMessage(e) {
+				function onMessage(e: MessageEvent) {
 					if (Array.isArray(e.data)) {
 						return;
 					}
 					cleanup();
 					resolve(e.data);
 				}
-				function onError(e) {
+				function onError(e: unknown) {
 					cleanup();
 					reject(e);
 				}
 				worker.addEventListener("error", onError);
 				worker.addEventListener("message", onMessage);
 				worker.postMessage({ hello: "world" });
-			}).then((data) => {
+			}).then((data: any) => {
 				assert.equal(data.hello, "world");
 			}),
 		]);
@@ -224,14 +224,14 @@ describe("host -> worker", () => {
 					worker.removeEventListener("message", onMessage);
 					worker.removeEventListener("error", onError);
 				}
-				function onMessage(e) {
+				function onMessage(e: MessageEvent) {
 					if (e.data !== "[2]") {
 						return;
 					}
 					cleanup();
 					resolve(e.data);
 				}
-				function onError(e) {
+				function onError(e: unknown) {
 					cleanup();
 					reject(e);
 				}
@@ -256,7 +256,7 @@ describe("host -> worker", () => {
 				assert.equal(res, 0);
 			})
 			.then(() => {
-				return new Promise((resolve, reject) => {
+				return new Promise<void>((resolve, reject) => {
 					setTimeout(() => {
 						return promiseWorker
 							.postMessage("ping")
@@ -273,7 +273,7 @@ describe("host -> worker", () => {
 
 describe("worker -> host", () => {
 	it("sends a message from worker to host", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new Worker(new URL("./worker-host-ping.js", import.meta.url), {
 				type: "module",
 			});
@@ -297,7 +297,7 @@ describe("worker -> host", () => {
 	});
 
 	it("echoes a message", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new Worker(new URL("./worker-host-echo.js", import.meta.url), {
 				type: "module",
 			});
@@ -321,7 +321,7 @@ describe("worker -> host", () => {
 	});
 
 	it("pongs a message with a promise", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new Worker(new URL("./worker-host-ping.js", import.meta.url), {
 				type: "module",
 			});
@@ -345,7 +345,7 @@ describe("worker -> host", () => {
 	});
 
 	it("pongs a message with a promise, again", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new Worker(new URL("./worker-host-ping.js", import.meta.url), {
 				type: "module",
 			});
@@ -369,7 +369,7 @@ describe("worker -> host", () => {
 	});
 
 	it("echoes a message multiple times", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new Worker(new URL("./worker-host-echo-multiple.js", import.meta.url), {
 				type: "module",
 			});
@@ -406,7 +406,7 @@ describe("worker -> host", () => {
 	});
 
 	it("can have multiple PromiseWorkers", () => {
-		new Promise((resolve) => {
+		new Promise<void>((resolve) => {
 			const worker = new Worker(new URL("./worker-host-echo.js", import.meta.url), {
 				type: "module",
 			});
@@ -453,7 +453,7 @@ describe("worker -> host", () => {
 	});
 
 	it("handles synchronous errors", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new Worker(new URL("./worker-host-error-sync.js", import.meta.url), {
 				type: "module",
 			});
@@ -476,7 +476,7 @@ describe("worker -> host", () => {
 	});
 
 	it("handles asynchronous errors", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new Worker(new URL("./worker-host-error-async.js", import.meta.url), {
 				type: "module",
 			});
@@ -503,7 +503,7 @@ describe("worker -> host", () => {
 	});
 
 	it("handles errors outside of responses", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new Worker(
 				new URL("./worker-host-error-outside-response.js", import.meta.url),
 				{ type: "module" },
@@ -520,13 +520,13 @@ describe("worker -> host", () => {
 
 	// This test is a little dicey, relies on setTimeout timing across host and worker
 	it("handles unregistered callbacks", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new Worker(new URL("./worker-host-empty.js", import.meta.url), {
 				type: "module",
 			});
 			const promiseWorker = new PWBHost(worker);
 
-			promiseWorker.register("mistake!");
+			promiseWorker.register("mistake!" as any);
 
 			setTimeout(() => {
 				promiseWorker.register((msg) => {
@@ -538,7 +538,7 @@ describe("worker -> host", () => {
 	});
 
 	it("allows custom additional behavior", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new Worker(new URL("./worker-host-echo-custom.js", import.meta.url), {
 				type: "module",
 			});
@@ -571,7 +571,7 @@ describe("worker -> host", () => {
 
 describe("bidirectional communication", () => {
 	it("echoes a message", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new Worker(new URL("./worker-bidirectional-echo.js", import.meta.url), {
 				type: "module",
 			});
@@ -602,7 +602,7 @@ describe("bidirectional communication", () => {
 // This is a shitty test, not sure how to simulate a real multi-tab test
 describe("Shared Worker", () => {
 	it("works", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new SharedWorker(new URL("./worker-shared.js", import.meta.url), {
 				type: "module",
 			});
@@ -641,7 +641,7 @@ describe("Shared Worker", () => {
 	});
 
 	it("handles errors outside of responses", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new SharedWorker(
 				new URL("./worker-host-error-outside-response.js", import.meta.url),
 				{ type: "module" },
@@ -660,9 +660,9 @@ describe("Shared Worker", () => {
 	it("handles errors outside of responses with two tabs (only report to first tab)", async () => {
 		const { error1, error2 } = await commands.testSharedWorkerErrorOutsideResponse();
 		assert.equal(error2, undefined);
-		assert.equal(error1.name, "Error");
-		assert.equal(error1.message, "error-outside-response");
-		assert(error1.stack.includes("error-outside-response"));
+		assert.equal(error1?.name, "Error");
+		assert.equal(error1?.message, "error-outside-response");
+		assert(error1?.stack?.includes("error-outside-response"));
 	});
 
 	it("worker sees tab close", async () => {
@@ -691,7 +691,7 @@ describe("transferable", () => {
 		assert.equal(response2.byteLength, 1);
 
 		// Wait for async errors in worker to happen
-		await new Promise((resolve) => {
+		await new Promise<void>((resolve) => {
 			setTimeout(() => {
 				resolve();
 			}, 500);
@@ -707,8 +707,11 @@ describe("transferable", () => {
 			return buffer;
 		});
 
-		const buffers = [];
-		promiseWorker.register((buffer) => {
+		const buffers: ArrayBuffer[] = [];
+		promiseWorker.register((buffer: unknown) => {
+			if (!(buffer instanceof ArrayBuffer)) {
+				throw new Error("Unexpected message");
+			}
 			assert.equal(buffer.byteLength, 1);
 			buffers.push(buffer);
 			return {
@@ -717,7 +720,7 @@ describe("transferable", () => {
 			};
 		});
 
-		await new Promise((resolve) => {
+		await new Promise<void>((resolve) => {
 			setTimeout(() => {
 				assert.equal(buffers.length, 2);
 				for (const buffer of buffers) {
@@ -731,7 +734,7 @@ describe("transferable", () => {
 
 describe("close event", () => {
 	it("Web Worker", () => {
-		return new Promise((resolve) => {
+		return new Promise<void>((resolve) => {
 			const worker = new Worker(new URL("./worker-echo.js", import.meta.url), {
 				type: "module",
 			});

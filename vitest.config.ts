@@ -125,7 +125,7 @@ export default defineConfig({
 				testSharedWorkerTabClose,
 			},
 		},
-		include: ["test/test.js"],
+		include: ["test/test.ts"],
 		slowTestThreshold: 5_000,
 		testTimeout: 10_000,
 	},
