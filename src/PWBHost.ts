@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+
 import {
 	MSGTYPE_HOST_ID,
 	MSGTYPE_HOST_LOCK,

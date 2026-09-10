@@ -18,9 +18,8 @@
 		"module": "preserve",
 		"noEmit": true,
 
-		"lib": ["esnext", "dom", "dom.iterable"],
+		"lib": ["esnext"],
 
 		"allowImportingTsExtensions": true
-	},
-	"include": ["src"]
+	}
 }
