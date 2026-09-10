@@ -1,4 +1,4 @@
-import { PWBWorker } from "../src/PWBWorker.ts";
+import { PWBWorker } from "../../src/PWBWorker.ts";
 
 const promiseWorker = new PWBWorker();
 

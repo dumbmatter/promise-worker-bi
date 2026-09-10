@@ -21,7 +21,7 @@ const makeTestWithTwoPages =
 				}
 				const { context } = ctx;
 
-				const htmlUrl = new URL(`/test/${htmlFilename}`, ctx.page.url()).toString();
+				const htmlUrl = new URL(`/test/fixtures/${htmlFilename}`, ctx.page.url()).toString();
 
 				const page1 = await context.newPage();
 				const page2 = await context.newPage();
