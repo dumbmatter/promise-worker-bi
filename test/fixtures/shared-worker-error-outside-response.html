@@ -3,7 +3,7 @@
 	<body>
 		<script type="module">
 			import { PWBHost } from "../../src/PWBHost.ts";
-			const worker = new SharedWorker("./worker-host-error-outside-response.js", {
+			const worker = new SharedWorker("./worker-host-error-outside-response.ts", {
 				type: "module",
 			});
 			const promiseWorker = new PWBHost(worker);

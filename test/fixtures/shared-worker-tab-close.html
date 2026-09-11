@@ -3,7 +3,7 @@
 	<body>
 		<script type="module">
 			import { PWBHost } from "../../src/PWBHost.ts";
-			const worker = new SharedWorker("./shared-worker-tab-close.js", {
+			const worker = new SharedWorker("./shared-worker-tab-close.ts", {
 				type: "module",
 			});
 			const promiseWorker = new PWBHost(worker);

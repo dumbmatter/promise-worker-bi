@@ -4,6 +4,6 @@ const promiseWorker = new PWBWorker();
 
 promiseWorker.register((message) => {
 	if (message === "getNumHosts") {
-		return promiseWorker._hosts.size;
+		return (promiseWorker as any)._hosts.size;
 	}
 });

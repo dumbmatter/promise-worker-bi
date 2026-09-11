@@ -4,7 +4,7 @@ import { PWBHost } from "../src/PWBHost.ts";
 
 describe("host -> worker", () => {
 	it("sends a message back and forth", () => {
-		const worker = new Worker(new URL("./fixtures/worker-pong.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-pong.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker = new PWBHost(worker);
@@ -15,7 +15,7 @@ describe("host -> worker", () => {
 	});
 
 	it("echoes a message", () => {
-		const worker = new Worker(new URL("./fixtures/worker-echo.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-echo.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker = new PWBHost(worker);
@@ -26,7 +26,7 @@ describe("host -> worker", () => {
 	});
 
 	it("pongs a message with a promise", () => {
-		const worker = new Worker(new URL("./fixtures/worker-pong-promise.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-pong-promise.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker = new PWBHost(worker);
@@ -37,7 +37,7 @@ describe("host -> worker", () => {
 	});
 
 	it("pongs a message with a promise, again", () => {
-		const worker = new Worker(new URL("./fixtures/worker-pong-promise.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-pong-promise.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker = new PWBHost(worker);
@@ -48,7 +48,7 @@ describe("host -> worker", () => {
 	});
 
 	it("echoes a message multiple times", () => {
-		const worker = new Worker(new URL("./fixtures/worker-echo.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-echo.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker = new PWBHost(worker);
@@ -79,7 +79,7 @@ describe("host -> worker", () => {
 	});
 
 	it("can have multiple PromiseWorkers", () => {
-		const worker = new Worker(new URL("./fixtures/worker-echo.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-echo.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker1 = new PWBHost(worker);
@@ -99,7 +99,7 @@ describe("host -> worker", () => {
 	});
 
 	it("can have multiple PromiseWorkers 2", () => {
-		const worker = new Worker(new URL("./fixtures/worker-echo.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-echo.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorkers = [
@@ -128,7 +128,7 @@ describe("host -> worker", () => {
 	});
 
 	it("handles synchronous errors", () => {
-		const worker = new Worker(new URL("./fixtures/worker-error-sync.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-error-sync.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker = new PWBHost(worker);
@@ -147,7 +147,7 @@ describe("host -> worker", () => {
 	});
 
 	it("handles asynchronous errors", () => {
-		const worker = new Worker(new URL("./fixtures/worker-error-async.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-error-async.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker = new PWBHost(worker);
@@ -165,7 +165,7 @@ describe("host -> worker", () => {
 	});
 
 	it("handles unregistered callbacks", () => {
-		const worker = new Worker(new URL("./fixtures/worker-empty.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-empty.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker = new PWBHost(worker);
@@ -181,7 +181,7 @@ describe("host -> worker", () => {
 	});
 
 	it("allows custom additional behavior", () => {
-		const worker = new Worker(new URL("./fixtures/worker-echo-custom.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-echo-custom.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker = new PWBHost(worker);
@@ -213,7 +213,7 @@ describe("host -> worker", () => {
 	});
 
 	it("allows custom additional behavior 2", () => {
-		const worker = new Worker(new URL("./fixtures/worker-echo-custom-2.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-echo-custom-2.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker = new PWBHost(worker);
@@ -245,7 +245,7 @@ describe("host -> worker", () => {
 	});
 
 	it("makes hostID immediately available", () => {
-		const worker = new Worker(new URL("./fixtures/worker-hostid.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-hostid.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker = new PWBHost(worker);
@@ -274,7 +274,7 @@ describe("host -> worker", () => {
 describe("worker -> host", () => {
 	it("sends a message from worker to host", () => {
 		return new Promise<void>((resolve) => {
-			const worker = new Worker(new URL("./fixtures/worker-host-ping.js", import.meta.url), {
+			const worker = new Worker(new URL("./fixtures/worker-host-ping.ts", import.meta.url), {
 				type: "module",
 			});
 			const promiseWorker = new PWBHost(worker);
@@ -298,7 +298,7 @@ describe("worker -> host", () => {
 
 	it("echoes a message", () => {
 		return new Promise<void>((resolve) => {
-			const worker = new Worker(new URL("./fixtures/worker-host-echo.js", import.meta.url), {
+			const worker = new Worker(new URL("./fixtures/worker-host-echo.ts", import.meta.url), {
 				type: "module",
 			});
 			const promiseWorker = new PWBHost(worker);
@@ -322,7 +322,7 @@ describe("worker -> host", () => {
 
 	it("pongs a message with a promise", () => {
 		return new Promise<void>((resolve) => {
-			const worker = new Worker(new URL("./fixtures/worker-host-ping.js", import.meta.url), {
+			const worker = new Worker(new URL("./fixtures/worker-host-ping.ts", import.meta.url), {
 				type: "module",
 			});
 			const promiseWorker = new PWBHost(worker);
@@ -346,7 +346,7 @@ describe("worker -> host", () => {
 
 	it("pongs a message with a promise, again", () => {
 		return new Promise<void>((resolve) => {
-			const worker = new Worker(new URL("./fixtures/worker-host-ping.js", import.meta.url), {
+			const worker = new Worker(new URL("./fixtures/worker-host-ping.ts", import.meta.url), {
 				type: "module",
 			});
 			const promiseWorker = new PWBHost(worker);
@@ -371,7 +371,7 @@ describe("worker -> host", () => {
 	it("echoes a message multiple times", () => {
 		return new Promise<void>((resolve) => {
 			const worker = new Worker(
-				new URL("./fixtures/worker-host-echo-multiple.js", import.meta.url),
+				new URL("./fixtures/worker-host-echo-multiple.ts", import.meta.url),
 				{
 					type: "module",
 				},
@@ -410,7 +410,7 @@ describe("worker -> host", () => {
 
 	it("can have multiple PromiseWorkers", () => {
 		new Promise<void>((resolve) => {
-			const worker = new Worker(new URL("./fixtures/worker-host-echo.js", import.meta.url), {
+			const worker = new Worker(new URL("./fixtures/worker-host-echo.ts", import.meta.url), {
 				type: "module",
 			});
 			const promiseWorker1 = new PWBHost(worker);
@@ -457,7 +457,7 @@ describe("worker -> host", () => {
 
 	it("handles synchronous errors", () => {
 		return new Promise<void>((resolve) => {
-			const worker = new Worker(new URL("./fixtures/worker-host-error-sync.js", import.meta.url), {
+			const worker = new Worker(new URL("./fixtures/worker-host-error-sync.ts", import.meta.url), {
 				type: "module",
 			});
 			const promiseWorker = new PWBHost(worker);
@@ -480,7 +480,7 @@ describe("worker -> host", () => {
 
 	it("handles asynchronous errors", () => {
 		return new Promise<void>((resolve) => {
-			const worker = new Worker(new URL("./fixtures/worker-host-error-async.js", import.meta.url), {
+			const worker = new Worker(new URL("./fixtures/worker-host-error-async.ts", import.meta.url), {
 				type: "module",
 			});
 			const promiseWorker = new PWBHost(worker);
@@ -508,7 +508,7 @@ describe("worker -> host", () => {
 	it("handles errors outside of responses", () => {
 		return new Promise<void>((resolve) => {
 			const worker = new Worker(
-				new URL("./fixtures/worker-host-error-outside-response.js", import.meta.url),
+				new URL("./fixtures/worker-host-error-outside-response.ts", import.meta.url),
 				{ type: "module" },
 			);
 			const promiseWorker = new PWBHost(worker);
@@ -524,7 +524,7 @@ describe("worker -> host", () => {
 	// This test is a little dicey, relies on setTimeout timing across host and worker
 	it("handles unregistered callbacks", () => {
 		return new Promise<void>((resolve) => {
-			const worker = new Worker(new URL("./fixtures/worker-host-empty.js", import.meta.url), {
+			const worker = new Worker(new URL("./fixtures/worker-host-empty.ts", import.meta.url), {
 				type: "module",
 			});
 			const promiseWorker = new PWBHost(worker);
@@ -542,7 +542,7 @@ describe("worker -> host", () => {
 
 	it("allows custom additional behavior", () => {
 		return new Promise<void>((resolve) => {
-			const worker = new Worker(new URL("./fixtures/worker-host-echo-custom.js", import.meta.url), {
+			const worker = new Worker(new URL("./fixtures/worker-host-echo-custom.ts", import.meta.url), {
 				type: "module",
 			});
 			const promiseWorker = new PWBHost(worker);
@@ -576,7 +576,7 @@ describe("bidirectional communication", () => {
 	it("echoes a message", () => {
 		return new Promise<void>((resolve) => {
 			const worker = new Worker(
-				new URL("./fixtures/worker-bidirectional-echo.js", import.meta.url),
+				new URL("./fixtures/worker-bidirectional-echo.ts", import.meta.url),
 				{
 					type: "module",
 				},
@@ -609,7 +609,7 @@ describe("bidirectional communication", () => {
 describe("Shared Worker", () => {
 	it("works", () => {
 		return new Promise<void>((resolve) => {
-			const worker = new SharedWorker(new URL("./fixtures/worker-shared.js", import.meta.url), {
+			const worker = new SharedWorker(new URL("./fixtures/worker-shared.ts", import.meta.url), {
 				type: "module",
 			});
 
@@ -649,7 +649,7 @@ describe("Shared Worker", () => {
 	it("handles errors outside of responses", () => {
 		return new Promise<void>((resolve) => {
 			const worker = new SharedWorker(
-				new URL("./fixtures/worker-host-error-outside-response.js", import.meta.url),
+				new URL("./fixtures/worker-host-error-outside-response.ts", import.meta.url),
 				{ type: "module" },
 			);
 			const promiseWorker = new PWBHost(worker);
@@ -681,7 +681,7 @@ describe("Shared Worker", () => {
 
 describe("transferable", () => {
 	it("from host to worker", async () => {
-		const worker = new Worker(new URL("./fixtures/worker-transferable.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-transferable.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker = new PWBHost(worker);
@@ -705,7 +705,7 @@ describe("transferable", () => {
 	});
 
 	it("from worker to host", async () => {
-		const worker = new Worker(new URL("./fixtures/worker-host-transferable.js", import.meta.url), {
+		const worker = new Worker(new URL("./fixtures/worker-host-transferable.ts", import.meta.url), {
 			type: "module",
 		});
 		const promiseWorker = new PWBHost(worker);
@@ -741,7 +741,7 @@ describe("transferable", () => {
 describe("close event", () => {
 	it("Web Worker", () => {
 		return new Promise<void>((resolve) => {
-			const worker = new Worker(new URL("./fixtures/worker-echo.js", import.meta.url), {
+			const worker = new Worker(new URL("./fixtures/worker-echo.ts", import.meta.url), {
 				type: "module",
 			});
 			const promiseWorker = new PWBHost(worker);

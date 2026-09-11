@@ -3,8 +3,11 @@ import { PWBWorker } from "../../src/PWBWorker.ts";
 
 const promiseWorker = new PWBWorker();
 
-const buffers = [];
+const buffers: ArrayBuffer[] = [];
 promiseWorker.register((buffer) => {
+	if (!(buffer instanceof ArrayBuffer)) {
+		throw new Error("Unexpected message");
+	}
 	assert.equal(buffer.byteLength, 1);
 	buffers.push(buffer);
 	return {

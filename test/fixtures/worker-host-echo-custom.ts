@@ -6,22 +6,18 @@ const promiseWorker = new PWBWorker();
 promiseWorker.postMessage("ping");
 
 new Promise((resolve, reject) => {
-	function onMessage(e) {
+	self.addEventListener("error", (e) => {
+		reject(e);
+	});
+	self.addEventListener("message", (e) => {
 		if (Array.isArray(e.data)) {
 			return;
 		}
 		resolve(e.data);
-	}
-
-	function onError(e) {
-		reject(e);
-	}
-
-	self.addEventListener("error", onError);
-	self.addEventListener("message", onMessage);
+	});
 
 	self.postMessage({ hello: "world" });
-}).then((data) => {
+}).then((data: any) => {
 	assert.equal(data.hello, "world");
 	promiseWorker.postMessage("done");
 });
