@@ -1,4 +1,4 @@
-# Dev
+# v6.0.0, 2026-09-13
 
 ## Open tab detection
 
