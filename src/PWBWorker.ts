@@ -29,7 +29,7 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 
 		const workerLockId = `pwb-worker-${Math.random()}`;
 
-		navigator.locks.request(workerLockId, async () => {
+		navigator.locks?.request(workerLockId, async () => {
 			// console.log(`Lock ${workerLockId} acquired on worker`);
 
 			this._workerLockAcquired = true;
@@ -165,7 +165,7 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 		}
 
 		if (message[0] === MSGTYPE_HOST_LOCK) {
-			navigator.locks.request(message[2], () => {
+			navigator.locks?.request(message[2], () => {
 				// console.log(`Lock ${message[2]} acquired from host ${message[1]}`);
 
 				// If hosts.size is ever 1  here, that means there are no tabs left, so either something went horribly wrong (would rather not delete the last host then, in case it's still alive) or the last tab is closing (and the worker will automatically be killed soon)

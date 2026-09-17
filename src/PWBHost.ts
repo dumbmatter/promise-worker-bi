@@ -99,7 +99,7 @@ export class PWBHost extends PWBBase<HostEvents> {
 
 	private handleWorkerLock(workerLockId: string) {
 		// Worker already has this lock, so if we ever get it, that means the worker has died somehow. Request shared so all tabs get it at once
-		navigator.locks.request(
+		navigator.locks?.request(
 			workerLockId,
 			{
 				mode: "shared",
@@ -145,7 +145,7 @@ export class PWBHost extends PWBBase<HostEvents> {
 			// Don't assume hostID is unique, could be two instances of this library with different workers
 			const hostLockId = `pwb-host-${Math.random()}`;
 
-			navigator.locks.request(hostLockId, async () => {
+			navigator.locks?.request(hostLockId, async () => {
 				// console.log(`Lock ${hostLockId} acquired on host ${hostID}`);
 
 				this._postMessage([MSGTYPE_HOST_LOCK, hostID, hostLockId]);

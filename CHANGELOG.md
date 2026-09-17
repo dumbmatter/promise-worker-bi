@@ -1,3 +1,7 @@
+# v6.0.1, 2026-09-17
+
+When the Web Locks API is not available (insecure contexts) simply do not listen for tab/worker closes rather than erroring.
+
 # v6.0.0, 2026-09-13
 
 ## Open tab detection
