@@ -85,7 +85,7 @@ The registered handler can return either a Promise or a normal value:
 
 ```js
 promiseWorker.register(async () => {
-	"much async, very promise";
+	return "much async, very promise";
 });
 ```
 
