@@ -143,7 +143,7 @@ export abstract class PWBBase<Events extends EventMap> extends EventTarget {
 				);
 			}
 		} catch (err) {
-			this._postResponse(messageID, err as Error);
+			this._postResponse(messageID, err as Error, undefined, hostID);
 		}
 	}
 
