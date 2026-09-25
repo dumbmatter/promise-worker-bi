@@ -1,3 +1,7 @@
+# dev
+
+The "error" event on the host `promiseWorker` now includes unhandled promise rejections.
+
 # v6.0.1, 2026-09-17
 
 When the Web Locks API is not available (insecure contexts) simply do not listen for tab/worker closes rather than erroring.

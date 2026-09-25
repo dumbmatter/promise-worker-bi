@@ -126,6 +126,8 @@ promiseWorker.addEventListener("error", (errorError) => {
 
 That will work if `worker` is a Web Worker or a Shared Worker, but there is one important difference. For a Shared Worker, it will only fire in the first host, to prevent duplicate errors from reaching an error log (assuming you're logging these errors somewhere).
 
+This also includes unhandled promise rejections inside the worker, which browsers otherwise only report in the worker's own console.
+
 #### Source maps
 
 If you use a source map for your worker script, this will not be reflected in the stack traces from promise-worker-bi (either in `promiseWorker.registerError` in response to `promiseWorker.postMessage`). However, you can still use your source map to translate the file/line/column numbers. Clever third-party error reporting services like [Bugsnag](https://www.bugsnag.com/) do this automatically!
@@ -287,7 +289,7 @@ Create a new instance of `PWBHost`, using the given worker.
 
 #### `promiseWorker.addEventListener("error", (event: ErrorEvent) => void)`
 
-When an error in your web/shared worker process occurs that is _not_ directly in response to a `promiseWorker.postMessage` call, you can see it by listening to the "error" event here.
+When an error in your web/shared worker process occurs that is _not_ directly in response to a `promiseWorker.postMessage` call, you can see it by listening to the "error" event here. This includes both uncaught errors and unhandled promise rejections.
 
 `promiseWorker` is EventTarget so you can use `addEventListener`, `removeEventListener`, and all their normal options.
 

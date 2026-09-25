@@ -65,18 +65,6 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 				}
 				this._postMessage(message, hostID);
 			});
-
-			_self.addEventListener("error", (e) => {
-				logError(e.error);
-				e.preventDefault();
-
-				// Just send to first host, so as to not duplicate error tracking
-				const hostID = this._hosts.keys().next().value;
-
-				if (hostID !== undefined) {
-					this._postMessage([MSGTYPE_WORKER_ERROR, e.error], hostID);
-				}
-			});
 		} else {
 			this._sharedWorker = false;
 			const _self = self as DedicatedWorkerGlobalScope;
@@ -87,14 +75,29 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 			// send this back, but it makes the API a bit more consistent if there is the same
 			// initialization handshake in both cases.
 			this._postMessage([MSGTYPE_HOST_ID, 0], 0);
-
-			_self.addEventListener("error", (e) => {
-				logError(e.error);
-				e.preventDefault();
-
-				this._postMessage([MSGTYPE_WORKER_ERROR, e.error]);
-			});
 		}
+
+		self.addEventListener("error", (e) => {
+			logError(e.error);
+			e.preventDefault();
+
+			this._postWorkerError(e.error);
+		});
+
+		// No preventDefault or logError here because unlike errors, unhandled rejections are not propagated to the host by the browser, so there is no risk of duplicate reporting
+		self.addEventListener("unhandledrejection", (e) => {
+			this._postWorkerError(e.reason);
+		});
+	}
+
+	private _postWorkerError(error: Error) {
+		// Just send to first host, so as to not duplicate error tracking
+		const hostID = this._sharedWorker ? this._hosts.keys().next().value : undefined;
+		if (this._sharedWorker && hostID === undefined) {
+			return;
+		}
+
+		this._postMessage([MSGTYPE_WORKER_ERROR, error], hostID);
 	}
 
 	protected _postMessage(
