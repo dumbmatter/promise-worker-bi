@@ -47,7 +47,7 @@ const testSharedWorkerClose = makeTestWithTwoPages<{
 	]);
 
 	const before1 = await page1.evaluate(() => window.testClient.closed);
-	const before2 = await page1.evaluate(() => window.testClient.closed);
+	const before2 = await page2.evaluate(() => window.testClient.closed);
 
 	// Give worker time to send workerLockId to hosts
 	await page1.waitForTimeout(100);
@@ -60,7 +60,7 @@ const testSharedWorkerClose = makeTestWithTwoPages<{
 	await page1.waitForTimeout(100);
 
 	const after1 = await page1.evaluate(() => window.testClient.closed);
-	const after2 = await page1.evaluate(() => window.testClient.closed);
+	const after2 = await page2.evaluate(() => window.testClient.closed);
 
 	return { after1, after2, before1, before2 };
 });

@@ -309,7 +309,7 @@ Create a new instance of `PWBWorker`.
 
 Register a message handler wherever you will be receiving messages: in the worker, in the browser, or both. Your handler consumes a message and returns a promise or value.
 
-The `hostID` parameter is only defined inside a shared worker, in which case it is a unique number identifying the host that the message came from.
+The `hostID` parameter is only meaningful inside a shared worker, in which case it is a unique number identifying the host that the message came from.
 
 The return value of the callback function (shown above as `unknown`) must resolve to something [structured cloneable](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).
 
