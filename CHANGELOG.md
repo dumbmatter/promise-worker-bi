@@ -1,4 +1,4 @@
-# dev
+# v6.0.2, 2026-09-25
 
 The "error" event on the host `promiseWorker` now includes unhandled promise rejections.
 
