@@ -180,6 +180,22 @@ describe("host -> worker", () => {
 		);
 	});
 
+	it("rejects when no handler is registered", () => {
+		const worker = new Worker(new URL("./fixtures/worker-no-handler.ts", import.meta.url), {
+			type: "module",
+		});
+		const promiseWorker = new PWBHost(worker);
+
+		return promiseWorker.postMessage("ping").then(
+			() => {
+				throw new Error("expected an error here");
+			},
+			(err) => {
+				assert.equal(err.message, "No handler registered to receive this message");
+			},
+		);
+	});
+
 	it("allows custom additional behavior", () => {
 		const worker = new Worker(new URL("./fixtures/worker-echo-custom.ts", import.meta.url), {
 			type: "module",
@@ -537,6 +553,23 @@ describe("worker -> host", () => {
 					resolve();
 				});
 			}, 50);
+		});
+	});
+
+	it("rejects when no handler is registered", () => {
+		return new Promise<void>((resolve) => {
+			const worker = new Worker(new URL("./fixtures/worker-host-no-handler.ts", import.meta.url), {
+				type: "module",
+			});
+			new PWBHost(worker);
+
+			worker.addEventListener("message", (e) => {
+				if (Array.isArray(e.data)) {
+					return;
+				}
+				assert.equal(e.data.error, "No handler registered to receive this message");
+				resolve();
+			});
 		});
 	});
 

@@ -16,7 +16,8 @@ import { logError, PWBBase } from "./PWBBase.ts";
 
 let nextMessageID = 0;
 
-type WorkerEvents = Record<string, Event>;
+// PWBWorker does not currently dispatch any events
+type WorkerEvents = Record<never, never>;
 
 export class PWBWorker extends PWBBase<WorkerEvents> {
 	private _hosts = new Map<number, { port: MessagePort }>();

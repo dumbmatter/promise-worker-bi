@@ -36,15 +36,13 @@ type EventMap = Record<string, Event>;
 
 export abstract class PWBBase<Events extends EventMap> extends EventTarget {
 	protected _callbacks: Map<number, (a: Error | null, b: unknown) => void>;
-	protected _queryCallback: QueryCallback;
+	protected _queryCallback: QueryCallback | undefined;
 
 	constructor() {
 		super();
 
 		// console.log('constructor', worker);
 		this._callbacks = new Map();
-
-		this._queryCallback = () => {};
 
 		// @ts-expect-error
 		this._onMessage = this._onMessage.bind(this);
@@ -126,6 +124,16 @@ export abstract class PWBBase<Events extends EventMap> extends EventTarget {
 		const messageID = message[1];
 		const query = message[2];
 		const hostID = message[3];
+
+		if (this._queryCallback === undefined) {
+			this._postResponse(
+				messageID,
+				new Error("No handler registered to receive this message"),
+				undefined,
+				hostID,
+			);
+			return;
+		}
 
 		try {
 			const result = this._queryCallback(query, hostID);
