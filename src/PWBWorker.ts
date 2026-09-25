@@ -19,6 +19,26 @@ let nextMessageID = 0;
 // PWBWorker does not currently dispatch any events
 type WorkerEvents = Record<never, never>;
 
+// Convert any thrown/rejected value into an Error, so it can be sent to the host
+const toError = (value: unknown): Error => {
+	if (Error.isError ? Error.isError(value) : value instanceof Error) {
+		return value as Error;
+	}
+
+	let message;
+	if (typeof value === "string") {
+		message = value;
+	} else {
+		try {
+			message = JSON.stringify(value) ?? String(value);
+		} catch {
+			message = String(value);
+		}
+	}
+
+	return new Error(message);
+};
+
 export class PWBWorker extends PWBBase<WorkerEvents> {
 	private _hosts = new Map<number, { port: MessagePort }>();
 	private _maxHostID = -1;
@@ -81,7 +101,8 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 			logError(e.error);
 			e.preventDefault();
 
-			this._postWorkerError(e.error);
+			// e.error can be null, such as for cross-origin script errors
+			this._postWorkerError(e.error ?? e.message);
 		});
 
 		// No preventDefault or logError here because unlike errors, unhandled rejections are not propagated to the host by the browser, so there is no risk of duplicate reporting
@@ -90,14 +111,14 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 		});
 	}
 
-	private _postWorkerError(error: Error) {
+	private _postWorkerError(value: unknown) {
 		// Just send to first host, so as to not duplicate error tracking
 		const hostID = this._sharedWorker ? this._hosts.keys().next().value : undefined;
 		if (this._sharedWorker && hostID === undefined) {
 			return;
 		}
 
-		this._postMessage([MSGTYPE_WORKER_ERROR, error], hostID);
+		this._postMessage([MSGTYPE_WORKER_ERROR, toError(value)], hostID);
 	}
 
 	protected _postMessage(

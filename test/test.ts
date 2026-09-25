@@ -552,6 +552,22 @@ describe("worker -> host", () => {
 		});
 	});
 
+	it("handles unhandled rejections of non-Error values", () => {
+		return new Promise<void>((resolve) => {
+			const worker = new Worker(
+				new URL("./fixtures/worker-host-unhandled-rejection-non-error.ts", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
+
+			promiseWorker.addEventListener("error", ({ error }) => {
+				assert.instanceOf(error, Error);
+				assert.include(error.message, "unhandled-rejection-non-error");
+				resolve();
+			});
+		});
+	});
+
 	// This test is a little dicey, relies on setTimeout timing across host and worker
 	it("handles unregistered callbacks", () => {
 		return new Promise<void>((resolve) => {
@@ -722,6 +738,22 @@ describe("Shared Worker", () => {
 			promiseWorker.addEventListener("error", ({ error }) => {
 				assert.equal(error.message, "unhandled-rejection");
 				assert.equal(error.name, "Error");
+				resolve();
+			});
+		});
+	});
+
+	it("handles unhandled rejections of non-Error values", () => {
+		return new Promise<void>((resolve) => {
+			const worker = new SharedWorker(
+				new URL("./fixtures/worker-host-unhandled-rejection-non-error.ts", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
+
+			promiseWorker.addEventListener("error", ({ error }) => {
+				assert.instanceOf(error, Error);
+				assert.include(error.message, "unhandled-rejection-non-error");
 				resolve();
 			});
 		});
