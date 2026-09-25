@@ -687,12 +687,12 @@ describe("transferable", () => {
 		const promiseWorker = new PWBHost(worker);
 
 		const buffer = new ArrayBuffer(1);
-		const response1 = await promiseWorker.postMessage(buffer);
+		const response1 = (await promiseWorker.postMessage(buffer)) as any;
 		assert.equal(buffer.byteLength, 1);
 		assert.equal(response1.byteLength, 1);
 
 		// byteLength goes to 0 when transfered https://developer.chrome.com/blog/transferable-objects-lightning-fast/
-		const response2 = await promiseWorker.postMessage(buffer, undefined, [buffer]);
+		const response2 = (await promiseWorker.postMessage(buffer, undefined, [buffer])) as any;
 		assert.equal(buffer.byteLength, 0);
 		assert.equal(response2.byteLength, 1);
 

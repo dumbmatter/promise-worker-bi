@@ -63,7 +63,7 @@ export class PWBHost extends PWBBase<HostEvents> {
 		userMessage: unknown,
 		_hostID?: undefined,
 		transfer?: Transferable[] | undefined,
-	): Promise<any> {
+	): Promise<unknown> {
 		// console.log('postMessage', userMessage, _hostID, transfer);
 		const actuallyPostMessage = (
 			resolve: (value?: unknown) => void,
