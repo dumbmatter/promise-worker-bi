@@ -1,4 +1,5 @@
 import {
+	isDOMException,
 	MSGTYPE_QUERY,
 	MSGTYPE_RESPONSE,
 	parseMessage,
@@ -18,6 +19,26 @@ export const logError = (err: Error) => {
 	// Logging in the console makes debugging in the worker easier
 	console.error("Error in worker:");
 	console.error(err); // Safari needs it on new line
+};
+
+// Convert any thrown/rejected value into an Error, so it can be sent to the other side
+export const toError = (value: unknown): Error => {
+	if (Error.isError ? Error.isError(value) || isDOMException(value) : value instanceof Error) {
+		return value as Error;
+	}
+
+	let message;
+	if (typeof value === "string") {
+		message = value;
+	} else {
+		try {
+			message = JSON.stringify(value) ?? String(value);
+		} catch {
+			message = String(value);
+		}
+	}
+
+	return new Error(message);
 };
 
 // This used to be `worker instanceof Worker` but I have recieved reports that in some weird cases, Safari will
@@ -146,12 +167,12 @@ export abstract class PWBBase<Events extends EventMap> extends EventTarget {
 						this._postResponse(messageID, null, finalResult, hostID);
 					},
 					(finalError) => {
-						this._postResponse(messageID, finalError, undefined, hostID);
+						this._postResponse(messageID, toError(finalError), undefined, hostID);
 					},
 				);
 			}
 		} catch (err) {
-			this._postResponse(messageID, err as Error, undefined, hostID);
+			this._postResponse(messageID, toError(err), undefined, hostID);
 		}
 	}
 

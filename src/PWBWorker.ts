@@ -6,39 +6,18 @@ import {
 	MSGTYPE_QUERY,
 	MSGTYPE_WORKER_ERROR,
 	MSGTYPE_WORKER_LOCK,
-	isDOMException,
 	type HostIdMessage,
 	type QueryMessage,
 	type ResponseMessage,
 	type WorkerErrorMessage,
 	type WorkerLockMessage,
 } from "./message.ts";
-import { logError, PWBBase } from "./PWBBase.ts";
+import { logError, PWBBase, toError } from "./PWBBase.ts";
 
 let nextMessageID = 0;
 
 // PWBWorker does not currently dispatch any events
 type WorkerEvents = Record<never, never>;
-
-// Convert any thrown/rejected value into an Error, so it can be sent to the host
-const toError = (value: unknown): Error => {
-	if (Error.isError ? Error.isError(value) || isDOMException(value) : value instanceof Error) {
-		return value as Error;
-	}
-
-	let message;
-	if (typeof value === "string") {
-		message = value;
-	} else {
-		try {
-			message = JSON.stringify(value) ?? String(value);
-		} catch {
-			message = String(value);
-		}
-	}
-
-	return new Error(message);
-};
 
 export class PWBWorker extends PWBBase<WorkerEvents> {
 	private _hosts = new Map<number, { port: MessagePort }>();

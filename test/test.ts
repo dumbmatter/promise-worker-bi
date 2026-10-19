@@ -183,6 +183,31 @@ describe("host -> worker", () => {
 		);
 	});
 
+	it("handles non-Error errors", async () => {
+		const worker = new Worker(new URL("./fixtures/worker-error-non-error.ts", import.meta.url), {
+			type: "module",
+		});
+		const promiseWorker = new PWBHost(worker);
+
+		const expected = {
+			string: "string busted",
+			object: '{"code":"object busted"}',
+			undefined: "undefined",
+			sync: "sync string busted",
+		};
+
+		for (const [query, message] of Object.entries(expected)) {
+			const err = await promiseWorker.postMessage(query).then(
+				() => {
+					throw new Error(`expected an error here for ${query}`);
+				},
+				(err) => err,
+			);
+			assert.instanceOf(err, Error);
+			assert.equal(err.message, message);
+		}
+	});
+
 	it("handles unregistered callbacks", () => {
 		const worker = new Worker(new URL("./fixtures/worker-empty.ts", import.meta.url), {
 			type: "module",
