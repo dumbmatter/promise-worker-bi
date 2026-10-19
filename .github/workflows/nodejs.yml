@@ -21,6 +21,6 @@ jobs:
           node-version: "24.x"
           cache: "pnpm"
       - run: pnpm install
-      - run: pnpx playwright install --with-deps
+      - run: pnpm exec playwright install --with-deps
       - run: pnpm run lint
       - run: pnpm run test
