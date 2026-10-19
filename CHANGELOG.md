@@ -1,3 +1,9 @@
+# v6.0.3, 2026-10-19
+
+- Work around WebKit bug where Error.isError returns false for DOMExceptions.
+
+- Requests that fail with a non-Error value now reject with an Error.
+
 # v6.0.2, 2026-09-25
 
 The "error" event on the host `promiseWorker` now includes unhandled promise rejections.
