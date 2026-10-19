@@ -164,6 +164,25 @@ describe("host -> worker", () => {
 		);
 	});
 
+	it("handles DOMException errors", () => {
+		const worker = new Worker(
+			new URL("./fixtures/worker-error-dom-exception.ts", import.meta.url),
+			{ type: "module" },
+		);
+		const promiseWorker = new PWBHost(worker);
+
+		return promiseWorker.postMessage("foo").then(
+			() => {
+				throw new Error("expected an error here");
+			},
+			(err) => {
+				assert.instanceOf(err, DOMException);
+				assert.equal(err.name, "NotFoundError");
+				assert.equal(err.message, "dom busted");
+			},
+		);
+	});
+
 	it("handles unregistered callbacks", () => {
 		const worker = new Worker(new URL("./fixtures/worker-empty.ts", import.meta.url), {
 			type: "module",
@@ -563,6 +582,23 @@ describe("worker -> host", () => {
 			promiseWorker.addEventListener("error", ({ error }) => {
 				assert.instanceOf(error, Error);
 				assert.include(error.message, "unhandled-rejection-non-error");
+				resolve();
+			});
+		});
+	});
+
+	it("handles unhandled rejections of DOMException values", () => {
+		return new Promise<void>((resolve) => {
+			const worker = new Worker(
+				new URL("./fixtures/worker-host-unhandled-rejection-dom-exception.ts", import.meta.url),
+				{ type: "module" },
+			);
+			const promiseWorker = new PWBHost(worker);
+
+			promiseWorker.addEventListener("error", ({ error }) => {
+				assert.instanceOf(error, DOMException);
+				assert.equal(error.name, "NotFoundError");
+				assert.equal(error.message, "unhandled-rejection-dom-exception");
 				resolve();
 			});
 		});

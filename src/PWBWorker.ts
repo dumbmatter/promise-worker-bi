@@ -6,6 +6,7 @@ import {
 	MSGTYPE_QUERY,
 	MSGTYPE_WORKER_ERROR,
 	MSGTYPE_WORKER_LOCK,
+	isDOMException,
 	type HostIdMessage,
 	type QueryMessage,
 	type ResponseMessage,
@@ -21,7 +22,7 @@ type WorkerEvents = Record<never, never>;
 
 // Convert any thrown/rejected value into an Error, so it can be sent to the host
 const toError = (value: unknown): Error => {
-	if (Error.isError ? Error.isError(value) : value instanceof Error) {
+	if (Error.isError ? Error.isError(value) || isDOMException(value) : value instanceof Error) {
 		return value as Error;
 	}
 

@@ -26,9 +26,14 @@ export type Message =
 	| WorkerLockMessage
 	| WorkerErrorMessage;
 
+// Needed because Safari's Error.isError returns false for DOMException https://bugs.webkit.org/show_bug.cgi?id=292727
+export const isDOMException = (value: unknown): value is DOMException => {
+	return typeof DOMException !== "undefined" && value instanceof DOMException;
+};
+
 const isError = (error: unknown): error is Error => {
 	if (Error.isError) {
-		return Error.isError(error);
+		return Error.isError(error) || isDOMException(error);
 	}
 
 	return true;
