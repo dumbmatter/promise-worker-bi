@@ -20,6 +20,7 @@ type HostEvents = {
 };
 
 export class PWBHost extends PWBBase<HostEvents> {
+	private _closed = false;
 	private _hostID: number | undefined; // Only defined on host
 	private _hostIDQueue: (() => void)[] | undefined;
 	private _worker: SharedWorker | Worker;
@@ -107,9 +108,17 @@ export class PWBHost extends PWBBase<HostEvents> {
 			async () => {
 				// console.log(`Lock ${workerLockId} acquired from worker`);
 
-				this.dispatchEvent(new Event("close"));
+				this._dispatchClose();
 			},
 		);
+	}
+
+	// There are multiple ways of detecting that the worker closed, but only dispatch the event once
+	private _dispatchClose() {
+		if (!this._closed) {
+			this._closed = true;
+			this.dispatchEvent(new Event("close"));
+		}
 	}
 
 	private _onMessage(e: MessageEvent) {
@@ -120,7 +129,9 @@ export class PWBHost extends PWBBase<HostEvents> {
 
 		if (message[0] === MSGTYPE_HOST_ID) {
 			if (this._hostID !== undefined) {
-				throw new Error("Received duplicate hostID message");
+				// The worker only sends hostID when it starts, so receiving it again means the worker restarted and lost its state. This seems to happen in Safari, which can kill and relaunch a shared worker while the tab is suspended.
+				this._dispatchClose();
+				return;
 			}
 
 			const hostID = message[1];

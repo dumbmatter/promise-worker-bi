@@ -1,3 +1,7 @@
+# v6.0.4, 2026-10-19
+
+- Work around Safari restarting workers in some situations (possibly when suspending/restoring a tab) by emitting a "close" event when a host recieves a duplicate hostID rather than throwing an error.
+
 # v6.0.3, 2026-10-19
 
 - Work around WebKit bug where Error.isError returns false for DOMExceptions.
