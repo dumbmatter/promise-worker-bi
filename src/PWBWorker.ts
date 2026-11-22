@@ -16,11 +16,24 @@ import { logError, PWBBase, toError } from "./PWBBase.ts";
 
 let nextMessageID = 0;
 
+type HostInfo = {
+	port: MessagePort;
+
+	// Queries sent from the worker to this host which have not yet received a response
+	pendingMessageIDs: Set<number>;
+};
+
+const hostClosedError = (hostID: number) => {
+	const error = new Error(`Host ${hostID} closed before responding`);
+	error.name = "HostClosedError";
+	return error;
+};
+
 // PWBWorker does not currently dispatch any events
 type WorkerEvents = Record<never, never>;
 
 export class PWBWorker extends PWBBase<WorkerEvents> {
-	private _hosts = new Map<number, { port: MessagePort }>();
+	private _hosts = new Map<number, HostInfo>();
 	private _maxHostID = -1;
 	private _sharedWorker: boolean;
 	private _workerLockAcquired = false;
@@ -53,7 +66,7 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 
 				this._maxHostID += 1;
 				const hostID = this._maxHostID;
-				this._hosts.set(hostID, { port });
+				this._hosts.set(hostID, { port, pendingMessageIDs: new Set() });
 
 				// Send back hostID to this host, otherwise it has no way to know it
 				let message: HostIdMessage;
@@ -139,16 +152,25 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 		transfer?: Transferable[] | undefined,
 	): Promise<unknown> {
 		// console.log('postMessage', userMessage, targetHostID);
-		const actuallyPostMessage = (
-			resolve: (value?: unknown) => void,
-			reject: (reason?: unknown) => void,
-		) => {
+		return new Promise((resolve, reject) => {
+			// Track queries to a specific host, so they can be rejected if that host closes. Broadcasts are not tracked, because if every host closes then the worker is about to be killed anyway. Dedicated workers are not tracked, because they share a lifetime with their only host.
+			let host: HostInfo | undefined;
+			if (this._sharedWorker && targetHostID !== undefined) {
+				host = this._hosts.get(targetHostID);
+				if (host === undefined) {
+					reject(hostClosedError(targetHostID));
+					return;
+				}
+			}
+
 			const messageID = nextMessageID;
 			nextMessageID += 1;
 
 			const messageToSend: QueryMessage = [MSGTYPE_QUERY, messageID, userMessage];
 
+			host?.pendingMessageIDs.add(messageID);
 			this._callbacks.set(messageID, (error, result) => {
+				host?.pendingMessageIDs.delete(messageID);
 				if (error) {
 					reject(error);
 				} else {
@@ -156,11 +178,26 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 				}
 			});
 			this._postMessage(messageToSend, targetHostID, transfer);
-		};
-
-		return new Promise((resolve, reject) => {
-			actuallyPostMessage(resolve, reject);
 		});
+	}
+
+	private _removeHost(hostID: number) {
+		const host = this._hosts.get(hostID);
+		if (host === undefined) {
+			return;
+		}
+
+		this._hosts.delete(hostID);
+
+		// Reject any queries that are still waiting on this host, since it will never respond
+		for (const messageID of host.pendingMessageIDs) {
+			const callback = this._callbacks.get(messageID);
+			if (callback !== undefined) {
+				this._callbacks.delete(messageID);
+				callback(hostClosedError(hostID), undefined);
+			}
+		}
+		host.pendingMessageIDs.clear();
 	}
 
 	private _onMessage(e: MessageEvent) {
@@ -175,7 +212,7 @@ export class PWBWorker extends PWBBase<WorkerEvents> {
 
 				// If hosts.size is ever 1  here, that means there are no tabs left, so either something went horribly wrong (would rather not delete the last host then, in case it's still alive) or the last tab is closing (and the worker will automatically be killed soon)
 				if (this._hosts.size > 1) {
-					this._hosts.delete(message[1]);
+					this._removeHost(message[1]);
 				}
 			});
 		}

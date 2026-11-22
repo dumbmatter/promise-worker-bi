@@ -1,3 +1,7 @@
+# v6.0.5, 2026-11-21
+
+- In a Shared Worker, `promiseWorker.postMessage(message, hostID)` now rejects if that host closes before responding, or if no host with that ID is connected. The error has `name` set to `"HostClosedError"`. Previously the promise would never settle. Broadcast messages (no hostID) are unchanged.
+
 # v6.0.4, 2026-10-19
 
 - Work around Safari restarting workers in some situations (possibly when suspending/restoring a tab) by emitting a "close" event when a host recieves a duplicate hostID rather than throwing an error.

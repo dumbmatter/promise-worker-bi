@@ -103,11 +103,41 @@ const testSharedWorkerTabClose = makeTestWithTwoPages<{
 	return { numHosts1, numHosts2, numHostsAfterClose };
 });
 
+const testSharedWorkerHostCloseWithPendingQuery = makeTestWithTwoPages<{
+	testClient: {
+		getResult: () => Promise<unknown>;
+		queryMe: () => Promise<unknown>;
+	};
+}>()("shared-worker-host-close.html", async ({ htmlUrl, page1, page2, window }) => {
+	await page1.goto(htmlUrl, { waitUntil: "load" });
+	await page2.goto(htmlUrl, { waitUntil: "load" });
+
+	// Worker sends a query to page2, which page2 never responds to
+	await page2.evaluate(() => window.testClient.queryMe());
+
+	// Give the query time to reach page2
+	await page1.waitForTimeout(100);
+
+	const before = await page1.evaluate(() => window.testClient.getResult());
+
+	await page2.close();
+
+	// Give worker time to notice page2 closed
+	await page1.waitForTimeout(100);
+
+	const after = await page1.evaluate(() => window.testClient.getResult());
+
+	return { after, before };
+});
+
 declare module "vitest/browser" {
 	interface BrowserCommands {
 		testSharedWorkerClose(): ReturnType<typeof testSharedWorkerClose>;
 		testSharedWorkerErrorOutsideResponse(): ReturnType<typeof testSharedWorkerErrorOutsideResponse>;
 		testSharedWorkerTabClose(): ReturnType<typeof testSharedWorkerTabClose>;
+		testSharedWorkerHostCloseWithPendingQuery(): ReturnType<
+			typeof testSharedWorkerHostCloseWithPendingQuery
+		>;
 	}
 }
 
@@ -123,6 +153,7 @@ export default defineConfig({
 				testSharedWorkerClose,
 				testSharedWorkerErrorOutsideResponse,
 				testSharedWorkerTabClose,
+				testSharedWorkerHostCloseWithPendingQuery,
 			},
 		},
 		include: ["test/test.ts"],

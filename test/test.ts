@@ -834,6 +834,23 @@ describe("Shared Worker", () => {
 		assert.equal(numHosts2, 2);
 		assert.equal(numHostsAfterClose, 1);
 	});
+
+	it("rejects pending queries to a host when that host closes", async () => {
+		const { after, before } = await commands.testSharedWorkerHostCloseWithPendingQuery();
+		assert.equal(before, "pending");
+		assert.match(String(after), /^rejected: HostClosedError: Host \d+ closed before responding$/);
+	});
+
+	it("rejects queries to a host that is not connected", async () => {
+		const worker = new SharedWorker(
+			new URL("./fixtures/shared-worker-host-close.ts", import.meta.url),
+			{ type: "module" },
+		);
+		const promiseWorker = new PWBHost(worker);
+
+		const result = await promiseWorker.postMessage("queryUnknownHost");
+		assert.equal(result, "rejected: HostClosedError: Host 999 closed before responding");
+	});
 });
 
 describe("transferable", () => {

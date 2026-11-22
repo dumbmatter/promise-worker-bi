@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+	<body>
+		<script type="module">
+			import { PWBHost } from "../../src/PWBHost.ts";
+			const worker = new SharedWorker("./shared-worker-host-close.ts", {
+				type: "module",
+			});
+			const promiseWorker = new PWBHost(worker);
+
+			// Never respond to queries from the worker
+			promiseWorker.register(() => new Promise(() => {}));
+
+			window.testClient = {
+				queryMe() {
+					return promiseWorker.postMessage("queryMe");
+				},
+				getResult() {
+					return promiseWorker.postMessage("getResult");
+				},
+			};
+		</script>
+	</body>
+</html>
